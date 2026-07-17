@@ -32,6 +32,7 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
 .btn.primary{background:var(--rust);border-color:var(--rust);color:#fff;}
 input.edit{width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 6px;font-size:11px;}
 input.edit.wide{width:110px;}
+select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 6px;font-size:11px;}
 .field{margin-bottom:12px;}
 .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
 .field input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:8px;font-size:14px;}
@@ -115,6 +116,7 @@ const db=firebase.database(app);
 let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia};
 let turnos=[], recebimentos=[];
 let chartLton,chartAreia,chartOleo;
+const FORNECEDORES=["Manoel","Madalena","Walk","Wedeson","Antonio"];
 
 function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
 
@@ -271,16 +273,26 @@ function editReceb(id){
   let r=recebimentos.find(x=>x.id===id);
   if(!r)return;
   let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
+  let isKnown=FORNECEDORES.includes(r.fornecedor);
   row.innerHTML=`
     <td><input class="edit" type="date" value="${r.data}" data-f="data"></td>
     <td><input class="edit" type="time" value="${r.hora||''}" data-f="hora"></td>
     <td><input class="edit" type="number" value="${r.antes??''}" data-f="antes"></td>
     <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
     <td>—</td>
-    <td><input class="edit wide" value="${r.fornecedor||''}" data-f="fornecedor"></td>
+    <td>
+      <select class="edit" id="fornSel_${id}">
+        ${FORNECEDORES.map(f=>`<option value="${f}" ${r.fornecedor===f?'selected':''}>${f}</option>`).join('')}
+        <option value="__outro__" ${!isKnown?'selected':''}>Outro</option>
+      </select>
+      <input class="edit wide" id="fornOutro_${id}" placeholder="Nome" style="margin-top:4px;${isKnown?'display:none;':''}" value="${!isKnown?(r.fornecedor||''):''}">
+    </td>
     <td><input class="edit wide" value="${r.recebedor||''}" data-f="recebedor"></td>
     <td><button class="btn primary" onclick="saveReceb('${id}')">Salvar</button><button class="btn" onclick="renderRecebTable()">Cancelar</button></td>
   `;
+  document.getElementById(`fornSel_${id}`).addEventListener('change',e=>{
+    document.getElementById(`fornOutro_${id}`).style.display = e.target.value==='__outro__'?'block':'none';
+  });
 }
 
 function saveReceb(id){
@@ -290,6 +302,9 @@ function saveReceb(id){
     let f=inp.dataset.f;
     updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
   });
+  let sel=document.getElementById(`fornSel_${id}`);
+  let outro=document.getElementById(`fornOutro_${id}`);
+  updates.fornecedor = sel.value==='__outro__' ? outro.value : sel.value;
   db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
 }
 </script>

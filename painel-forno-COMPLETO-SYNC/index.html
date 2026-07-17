@@ -24,6 +24,7 @@ header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg, #1418
 .icon-btn{width:34px;height:34px;border-radius:9px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;}
 .status-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;background:#888;}
 .status-dot.on{background:var(--good);box-shadow:0 0 8px var(--good);}
+.status-dot.err{background:var(--danger);box-shadow:0 0 8px var(--danger);}
 
 main{max-width:540px;margin:0 auto;padding:16px;}
 .hero{background:linear-gradient(180deg, var(--panel) 0%, #171b20 100%);border:1px solid var(--line);border-radius:18px;padding:22px 18px;position:relative;overflow:hidden;}
@@ -85,7 +86,7 @@ section{margin-top:22px;}
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div style="display:flex;align-items:center;font-size:11px;color:var(--muted);">
-      <span class="status-dot on"></span><span id="syncStatus">conectado</span>
+      <span class="status-dot"></span><span id="syncStatus">carregando…</span>
     </div>
     <button class="icon-btn" id="btnConfig">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -227,9 +228,26 @@ let firebaseDb=null,useFirebase=false;
 
 function uid(){return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 
+function setSyncStatus(text,ok){
+  document.getElementById('syncStatus').textContent=text;
+  let dot=document.querySelector('.status-dot');
+  dot.classList.toggle('on',!!ok);
+  if(ok)dot.classList.remove('err');
+}
+
+function firebaseError(err){
+  let msg=(err&&err.message)?err.message:String(err);
+  console.error("Firebase error:",err);
+  document.getElementById('syncStatus').textContent='erro: '+msg;
+  let dot=document.querySelector('.status-dot');
+  dot.classList.remove('on');
+  dot.classList.add('err');
+  document.getElementById('alertBox').innerHTML=`<div class="alert">⚠️ Firebase: ${msg}</div>`;
+}
+
 function initFirebase(){
   let cfg=state.cfg;
-  if(!cfg.apiKey||!cfg.databaseURL){console.log("Firebase desativado");useFirebase=false;return;}
+  if(!cfg.apiKey||!cfg.databaseURL){console.log("Firebase desativado");useFirebase=false;setSyncStatus('local (sem Firebase)',false);return;}
   try{
     const firebaseApp=firebase.initializeApp({
       apiKey:cfg.apiKey,
@@ -238,12 +256,11 @@ function initFirebase(){
     },'app');
     firebaseDb=firebase.database(firebaseApp);
     useFirebase=true;
+    setSyncStatus('conectando...',false);
     attachListeners();
-    document.getElementById('syncStatus').textContent='sincronizado';
-    document.querySelector('.status-dot').classList.add('on');
   }catch(e){
-    console.error("Firebase init error:",e);
     useFirebase=false;
+    firebaseError(e);
   }
 }
 
@@ -257,13 +274,14 @@ function attachListeners(){
   firebaseDb.ref(TURNOS).on('value',snap=>{
     state.turnos=snapToList(snap.val());
     try{localStorage.setItem(TURNOS,JSON.stringify(state.turnos));}catch(e){}
+    setSyncStatus('sincronizado',true);
     render();
-  });
+  },firebaseError);
   firebaseDb.ref(RECEB).on('value',snap=>{
     state.recebimentos=snapToList(snap.val());
     try{localStorage.setItem(RECEB,JSON.stringify(state.recebimentos));}catch(e){}
     render();
-  });
+  },firebaseError);
   firebaseDb.ref(PARAMS).on('value',snap=>{
     let v=snap.val();
     if(v){
@@ -271,7 +289,7 @@ function attachListeners(){
       try{localStorage.setItem(CFG,JSON.stringify(state.cfg));}catch(e){}
       render();
     }
-  });
+  },firebaseError);
 }
 
 function save(k,v){
@@ -285,7 +303,7 @@ function load(k,d){
 function addEntry(k,entry){
   if(useFirebase&&firebaseDb){
     firebaseDb.ref(k).push(entry).catch(e=>{
-      console.error("Firebase save error:",e);
+      firebaseError(e);
       addLocal(k,entry);
     });
   }else{
@@ -317,6 +335,7 @@ function compute(t){
 }
 
 function updateAlert(c){
+  if(document.querySelector('.status-dot').classList.contains('err'))return;
   let box=document.getElementById('alertBox');
   if(!c.lton){box.innerHTML='';return;}
   let meta=state.cfg.meta,tol=state.cfg.tolerancia;
@@ -430,7 +449,7 @@ document.getElementById('formConfig').addEventListener('submit',e=>{
   save(CFG,state.cfg);
   close();
   if(useFirebase&&firebaseDb){
-    firebaseDb.ref(PARAMS).set(params).catch(e=>console.error("Firebase params save error:",e));
+    firebaseDb.ref(PARAMS).set(params).catch(firebaseError);
   }
   if(creds.apiKey&&creds.databaseURL&&!useFirebase){initFirebase();}
   render();

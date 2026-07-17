@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Importar histórico — Painel Forno</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+body{background:#12151A;color:#EDEAE4;font-family:system-ui,sans-serif;padding:20px;max-width:600px;margin:0 auto;}
+h1{font-size:18px;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:16px 0;}
+td,th{border:1px solid #333A43;padding:6px;text-align:left;}
+.warn{color:#E8A33D;}
+button{background:#C1571F;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;width:100%;margin-top:12px;cursor:pointer;}
+button:disabled{opacity:0.5;}
+#log{white-space:pre-wrap;font-family:monospace;font-size:12px;margin-top:16px;background:#1B1F25;padding:10px;border-radius:8px;max-height:300px;overflow:auto;}
+</style>
+</head>
+<body>
+<h1>Importar recebimentos de óleo (histórico do caderno)</h1>
+<p>Isso vai gravar <b>18 registros</b> de recebimento de óleo direto no Firebase compartilhado. Confira a tabela antes de clicar em importar. Linhas marcadas com <span class="warn">⚠️</span> têm horário aproximado — confira depois se quiser corrigir.</p>
+<table id="tbl"></table>
+<button id="btnImport">Importar 18 registros</button>
+<div id="log"></div>
+
+<script>
+const DATA = [
+  {data:"2026-06-09", hora:"14:36", fornecedor:"Manoel", litros:1000, aprox:false},
+  {data:"2026-06-10", hora:"15:19", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-11", hora:"09:56", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-11", hora:"13:34", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-12", hora:"14:09", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-15", hora:"12:01", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-16", hora:"13:26", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-17", hora:"07:20", fornecedor:"Madalena", litros:2000, aprox:false},
+  {data:"2026-06-18", hora:"12:34", fornecedor:"Wedeson", litros:1000, aprox:true},
+  {data:"2026-06-19", hora:"10:38", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-22", hora:"12:00", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-22", hora:"13:16", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-23", hora:"11:10", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-25", hora:"11:28", fornecedor:"Antonio", litros:1000, aprox:true},
+  {data:"2026-06-26", hora:"11:04", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-03", hora:"08:12", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-06", hora:"07:31", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-07", hora:"08:10", fornecedor:"Manoel", litros:1000, aprox:true},
+];
+
+const tbl=document.getElementById('tbl');
+tbl.innerHTML='<tr><th>Data</th><th>Hora</th><th>Fornecedor</th><th>Litros</th></tr>'+
+  DATA.map(d=>`<tr><td>${d.data}</td><td>${d.hora}${d.aprox?' <span class="warn">⚠️</span>':''}</td><td>${d.fornecedor}</td><td>${d.litros}L</td></tr>`).join('');
+
+const firebaseConfig={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno"};
+const app=firebase.initializeApp(firebaseConfig,'importApp');
+const db=firebase.database(app);
+
+document.getElementById('btnImport').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btnImport');
+  const log=document.getElementById('log');
+  btn.disabled=true;
+  log.textContent='Importando...\n';
+  let ok=0, fail=0;
+  for(const d of DATA){
+    const entry={
+      data:d.data, hora:d.hora,
+      antes:0, depois:d.litros,
+      fornecedor:d.fornecedor, recebedor:"Guilherme"
+    };
+    try{
+      await db.ref('recebimentos').push(entry);
+      ok++;
+      log.textContent+=`✅ ${d.data} ${d.fornecedor} ${d.litros}L\n`;
+    }catch(e){
+      fail++;
+      log.textContent+=`❌ ${d.data} ${d.fornecedor}: ${e.message}\n`;
+    }
+  }
+  log.textContent+=`\nConcluído: ${ok} importados, ${fail} falharam.`;
+  btn.textContent='Importação concluída';
+});
+</script>
+</body>
+</html>

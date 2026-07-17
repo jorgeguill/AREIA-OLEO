@@ -120,6 +120,12 @@ const FORNECEDORES=["Madalena","José William","Eugênia","Emanuel","Walk"];
 
 function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
 
+function formatDate(iso){
+  if(!iso)return '';
+  let [y,m,d]=iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
 function compute(t){
   let m3u=Number(t.m3_umida),m3s=m3u*(1-cfg.umidade/100),ton=m3s*cfg.densidade;
   let oleo=(Number(t.tanque_ini)-Number(t.tanque_fim))+Number(t.oleo_receb||0);
@@ -172,7 +178,7 @@ function renderStats(){
 
 function renderCharts(){
   let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
-  let labels=sorted.map(t=>t.data+' '+(t.turno||'').slice(0,3));
+  let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
   let ltonData=sorted.map(t=>{let c=compute(t);return c.lton?+c.lton.toFixed(2):null;});
   let metaLine=sorted.map(()=>cfg.meta);
 
@@ -189,11 +195,11 @@ function renderCharts(){
 
   let byDay={};
   sorted.forEach(t=>{ byDay[t.data]=(byDay[t.data]||0)+Number(t.m3_umida||0); });
-  let dayLabels=Object.keys(byDay).sort();
+  let dayKeys=Object.keys(byDay).sort();
   if(chartAreia)chartAreia.destroy();
   chartAreia=new Chart(document.getElementById('chartAreia'),{
     type:'bar',
-    data:{labels:dayLabels,datasets:[{label:'m³ úmida',data:dayLabels.map(d=>byDay[d]),backgroundColor:'#E8A33D'}]},
+    data:{labels:dayKeys.map(formatDate),datasets:[{label:'m³ úmida',data:dayKeys.map(d=>byDay[d]),backgroundColor:'#E8A33D'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
   });
@@ -216,7 +222,7 @@ function renderTurnosTable(){
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t);
     return `<tr data-id="${t.id}">
-      <td>${t.data}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
+      <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
       <td>${t.m3_umida??''}</td><td>${t.silo||''}</td>
       <td>${t.tanque_ini??''}</td><td>${t.tanque_fim??''}</td><td>${t.oleo_receb??0}</td>
       <td>${c.lton?c.lton.toFixed(2):'—'}</td>
@@ -229,7 +235,7 @@ function renderRecebTable(){
   let sorted=recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   let tbody=document.querySelector('#tblReceb tbody');
   tbody.innerHTML=sorted.map(r=>`<tr data-id="${r.id}">
-      <td>${r.data}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
+      <td>${formatDate(r.data)}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
       <td>${(Number(r.depois)-Number(r.antes)).toFixed(0)}</td>
       <td>${r.fornecedor||''}</td><td>${r.recebedor||''}</td>
       <td><button class="btn" onclick="editReceb('${r.id}')">Editar</button><button class="btn danger" onclick="delEntry('recebimentos','${r.id}')">Excluir</button></td>

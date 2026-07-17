@@ -356,6 +356,12 @@ function compute(t){
   return{m3u,m3s,ton,oleo,lton};
 }
 
+function formatDate(iso){
+  if(!iso)return '';
+  let [y,m,d]=iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
 function updateAlert(c){
   if(document.querySelector('.status-dot').classList.contains('err'))return;
   let box=document.getElementById('alertBox');
@@ -391,11 +397,11 @@ function render(){
   let html='';
   turnos.slice(-8).reverse().forEach(t=>{
     let c=compute(t);
-    html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno} • ${t.operador}</div><div class="entry-sub">${t.data} • ${t.silo}</div></div><div class="entry-val">${c.lton?c.lton.toFixed(2):'—'}</div></div>`;
+    html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno} • ${t.operador}</div><div class="entry-sub">${formatDate(t.data)} • ${t.silo}</div></div><div class="entry-val">${c.lton?c.lton.toFixed(2):'—'}</div></div>`;
   });
   let recebSorted=state.recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   recebSorted.slice(-5).reverse().forEach(r=>{
-    html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor}</div><div class="entry-sub">${r.data} ${r.hora}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`;
+    html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`;
   });
   list.innerHTML=html||'<div style="padding:8px;color:var(--muted);font-size:12px;">Sem registros</div>';
 }

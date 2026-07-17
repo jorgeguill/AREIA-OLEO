@@ -221,13 +221,14 @@ section{margin-top:22px;}
 
 <script>
 const TURNOS="turnos",RECEB="recebimentos",CFG="cfg",PARAMS="parametros";
-let state={cfg:{umidade:8,densidade:1.5,meta:8,tolerancia:15},turnos:[],recebimentos:[]};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:8,tolerancia:15};
+let state={cfg:{...DEFAULT_CFG},turnos:[],recebimentos:[]};
 let firebaseDb=null,useFirebase=false;
 
 function uid(){return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 
 function initFirebase(){
-  let cfg=load(CFG,{});
+  let cfg=state.cfg;
   if(!cfg.apiKey||!cfg.databaseURL){console.log("Firebase desativado");useFirebase=false;return;}
   try{
     const firebaseApp=firebase.initializeApp({
@@ -300,7 +301,7 @@ function addLocal(k,entry){
 }
 
 function init(){
-  state.cfg=load(CFG,state.cfg);
+  state.cfg={...DEFAULT_CFG,...load(CFG,{})};
   state.turnos=load(TURNOS,[]);
   state.recebimentos=load(RECEB,[]);
   initFirebase();

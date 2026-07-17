@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel Administrativo — Painel Forno</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+:root{ --bg:#12151A; --panel:#1B1F25; --panel2:#232830; --line:#333A43; --ink:#EDEAE4; --muted:#8D96A1; --rust:#C1571F; --amber:#E8A33D; --good:#4F9D69; --danger:#D6534A; }
+*{box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;margin:0;padding:16px 16px 60px;}
+h1{font-family:'Oswald',sans-serif;font-size:20px;margin:0 0 4px;}
+.sub{color:var(--muted);font-size:12px;margin-bottom:20px;}
+a.back{color:var(--amber);font-size:12px;text-decoration:none;}
+section{margin-top:28px;}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;}
+.chart-wrap{position:relative;height:220px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.stat{background:var(--panel2);border-radius:10px;padding:10px;text-align:center;}
+.stat .v{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;}
+.stat .l{font-size:10px;color:var(--muted);margin-top:2px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;white-space:nowrap;}
+th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--panel);}
+.tblwrap{overflow-x:auto;border-radius:10px;}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;margin-right:4px;}
+.btn.danger{color:var(--danger);border-color:rgba(214,83,74,.4);}
+.btn.primary{background:var(--rust);border-color:var(--rust);color:#fff;}
+input.edit{width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 6px;font-size:11px;}
+input.edit.wide{width:110px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.field input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:8px;font-size:14px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#cfgMsg{font-size:12px;color:var(--good);margin-top:8px;}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">← Voltar ao app</a>
+<h1>Painel Administrativo</h1>
+<div class="sub">Link de acesso restrito — não compartilhe com operadores.</div>
+
+<section>
+  <h2>Resumo</h2>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="statTurnos">—</div><div class="l">turnos registrados</div></div>
+    <div class="stat"><div class="v" id="statReceb">—</div><div class="l">recebimentos</div></div>
+    <div class="stat"><div class="v" id="statMedia">—</div><div class="l">média L/ton</div></div>
+    <div class="stat"><div class="v" id="statTotalOleo">—</div><div class="l">óleo recebido (L)</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Consumo L/ton por turno</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartLton"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Areia processada por dia (m³ úmida)</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartAreia"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Óleo recebido por fornecedor</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartOleo"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Parâmetros da areia</h2>
+  <div class="card">
+    <form id="formCfg">
+      <div class="row2">
+        <div class="field"><label>Umidade bruta (%)</label><input type="number" step="0.1" name="umidade" required></div>
+        <div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" name="densidade" required></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Meta L/ton</label><input type="number" step="0.1" name="meta" required></div>
+        <div class="field"><label>Tolerância (%)</label><input type="number" step="1" name="tolerancia" required></div>
+      </div>
+      <button type="submit" class="btn primary">Salvar parâmetros</button>
+      <div id="cfgMsg"></div>
+    </form>
+  </div>
+</section>
+
+<section>
+  <h2>Histórico completo — Turnos</h2>
+  <div class="card tblwrap">
+    <table id="tblTurnos">
+      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>m³ úmida</th><th>Silo</th><th>Tanque ini</th><th>Tanque fim</th><th>Óleo receb.</th><th>L/ton</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Histórico completo — Recebimentos</h2>
+  <div class="card tblwrap">
+    <table id="tblReceb">
+      <thead><tr><th>Data</th><th>Hora</th><th>Antes</th><th>Depois</th><th>Litros</th><th>Fornecedor</th><th>Recebedor</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15};
+const app=firebase.initializeApp(DEFAULT_CFG,'adminApp');
+const db=firebase.database(app);
+let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia};
+let turnos=[], recebimentos=[];
+let chartLton,chartAreia,chartOleo;
+
+function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
+
+function compute(t){
+  let m3u=Number(t.m3_umida),m3s=m3u*(1-cfg.umidade/100),ton=m3s*cfg.densidade;
+  let oleo=(Number(t.tanque_ini)-Number(t.tanque_fim))+Number(t.oleo_receb||0);
+  let lton=Number(t.consumo_manual)||null;
+  if(!lton&&ton>0.01)lton=oleo/ton;
+  return{m3u,m3s,ton,oleo,lton};
+}
+
+db.ref('parametros').on('value',snap=>{
+  let v=snap.val();
+  if(v){ cfg={...cfg,...v}; fillCfgForm(); renderAll(); }
+});
+
+function fillCfgForm(){
+  let f=document.getElementById('formCfg');
+  f.umidade.value=cfg.umidade; f.densidade.value=cfg.densidade;
+  f.meta.value=cfg.meta; f.tolerancia.value=cfg.tolerancia;
+}
+fillCfgForm();
+
+document.getElementById('formCfg').addEventListener('submit',e=>{
+  e.preventDefault();
+  let f=e.target;
+  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value)};
+  db.ref('parametros').set(params).then(()=>{
+    document.getElementById('cfgMsg').textContent='✅ Salvo — vale para o app de todos os operadores também.';
+    setTimeout(()=>document.getElementById('cfgMsg').textContent='',3000);
+  }).catch(err=>{ document.getElementById('cfgMsg').textContent='❌ '+err.message; });
+});
+
+db.ref('turnos').on('value',snap=>{ turnos=snapToList(snap.val()); renderAll(); });
+db.ref('recebimentos').on('value',snap=>{ recebimentos=snapToList(snap.val()); renderAll(); });
+
+function renderAll(){
+  renderStats();
+  renderCharts();
+  renderTurnosTable();
+  renderRecebTable();
+}
+
+function renderStats(){
+  document.getElementById('statTurnos').textContent=turnos.length;
+  document.getElementById('statReceb').textContent=recebimentos.length;
+  let ltons=turnos.map(compute).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
+  let media=ltons.length?(ltons.reduce((a,b)=>a+b,0)/ltons.length):0;
+  document.getElementById('statMedia').textContent=media?media.toFixed(2):'—';
+  let totalOleo=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0);
+  document.getElementById('statTotalOleo').textContent=totalOleo.toFixed(0);
+}
+
+function renderCharts(){
+  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let labels=sorted.map(t=>t.data+' '+(t.turno||'').slice(0,3));
+  let ltonData=sorted.map(t=>{let c=compute(t);return c.lton?+c.lton.toFixed(2):null;});
+  let metaLine=sorted.map(()=>cfg.meta);
+
+  if(chartLton)chartLton.destroy();
+  chartLton=new Chart(document.getElementById('chartLton'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'L/ton',data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
+      {label:'Meta',data:metaLine,borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
+  });
+
+  let byDay={};
+  sorted.forEach(t=>{ byDay[t.data]=(byDay[t.data]||0)+Number(t.m3_umida||0); });
+  let dayLabels=Object.keys(byDay).sort();
+  if(chartAreia)chartAreia.destroy();
+  chartAreia=new Chart(document.getElementById('chartAreia'),{
+    type:'bar',
+    data:{labels:dayLabels,datasets:[{label:'m³ úmida',data:dayLabels.map(d=>byDay[d]),backgroundColor:'#E8A33D'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
+  });
+
+  let byForn={};
+  recebimentos.forEach(r=>{ let l=Number(r.depois)-Number(r.antes); byForn[r.fornecedor]=(byForn[r.fornecedor]||0)+l; });
+  let fornLabels=Object.keys(byForn);
+  if(chartOleo)chartOleo.destroy();
+  chartOleo=new Chart(document.getElementById('chartOleo'),{
+    type:'bar',
+    data:{labels:fornLabels,datasets:[{label:'Litros',data:fornLabels.map(f=>byForn[f]),backgroundColor:'#4F9D69'}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}
+  });
+}
+
+function renderTurnosTable(){
+  let sorted=turnos.slice().sort((a,b)=>new Date(b.data)-new Date(a.data));
+  let tbody=document.querySelector('#tblTurnos tbody');
+  tbody.innerHTML=sorted.map(t=>{
+    let c=compute(t);
+    return `<tr data-id="${t.id}">
+      <td>${t.data}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
+      <td>${t.m3_umida??''}</td><td>${t.silo||''}</td>
+      <td>${t.tanque_ini??''}</td><td>${t.tanque_fim??''}</td><td>${t.oleo_receb??0}</td>
+      <td>${c.lton?c.lton.toFixed(2):'—'}</td>
+      <td><button class="btn" onclick="editTurno('${t.id}')">Editar</button><button class="btn danger" onclick="delEntry('turnos','${t.id}')">Excluir</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+}
+
+function renderRecebTable(){
+  let sorted=recebimentos.slice().sort((a,b)=>new Date(b.data+'T'+(b.hora||'00:00'))-new Date(a.data+'T'+(a.hora||'00:00')));
+  let tbody=document.querySelector('#tblReceb tbody');
+  tbody.innerHTML=sorted.map(r=>`<tr data-id="${r.id}">
+      <td>${r.data}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
+      <td>${(Number(r.depois)-Number(r.antes)).toFixed(0)}</td>
+      <td>${r.fornecedor||''}</td><td>${r.recebedor||''}</td>
+      <td><button class="btn" onclick="editReceb('${r.id}')">Editar</button><button class="btn danger" onclick="delEntry('recebimentos','${r.id}')">Excluir</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+}
+
+function delEntry(path,id){
+  if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.'))return;
+  db.ref(path+'/'+id).remove().catch(e=>alert('Erro ao excluir: '+e.message));
+}
+
+function editTurno(id){
+  let t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
+  row.innerHTML=`
+    <td><input class="edit" type="date" value="${t.data}" data-f="data"></td>
+    <td><input class="edit" value="${t.turno||''}" data-f="turno"></td>
+    <td><input class="edit wide" value="${t.operador||''}" data-f="operador"></td>
+    <td><input class="edit" type="number" step="0.1" value="${t.m3_umida??''}" data-f="m3_umida"></td>
+    <td><input class="edit wide" value="${t.silo||''}" data-f="silo"></td>
+    <td><input class="edit" type="number" value="${t.tanque_ini??''}" data-f="tanque_ini"></td>
+    <td><input class="edit" type="number" value="${t.tanque_fim??''}" data-f="tanque_fim"></td>
+    <td><input class="edit" type="number" value="${t.oleo_receb??0}" data-f="oleo_receb"></td>
+    <td>—</td>
+    <td><button class="btn primary" onclick="saveTurno('${id}')">Salvar</button><button class="btn" onclick="renderTurnosTable()">Cancelar</button></td>
+  `;
+}
+
+function saveTurno(id){
+  let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
+  let updates={};
+  row.querySelectorAll('input[data-f]').forEach(inp=>{
+    let f=inp.dataset.f;
+    updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
+  });
+  db.ref('turnos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
+}
+
+function editReceb(id){
+  let r=recebimentos.find(x=>x.id===id);
+  if(!r)return;
+  let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
+  row.innerHTML=`
+    <td><input class="edit" type="date" value="${r.data}" data-f="data"></td>
+    <td><input class="edit" type="time" value="${r.hora||''}" data-f="hora"></td>
+    <td><input class="edit" type="number" value="${r.antes??''}" data-f="antes"></td>
+    <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
+    <td>—</td>
+    <td><input class="edit wide" value="${r.fornecedor||''}" data-f="fornecedor"></td>
+    <td><input class="edit wide" value="${r.recebedor||''}" data-f="recebedor"></td>
+    <td><button class="btn primary" onclick="saveReceb('${id}')">Salvar</button><button class="btn" onclick="renderRecebTable()">Cancelar</button></td>
+  `;
+}
+
+function saveReceb(id){
+  let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
+  let updates={};
+  row.querySelectorAll('input[data-f]').forEach(inp=>{
+    let f=inp.dataset.f;
+    updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
+  });
+  db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
+}
+</script>
+</body>
+</html>

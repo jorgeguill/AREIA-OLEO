@@ -38,6 +38,9 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 .field input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:8px;font-size:14px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 #cfgMsg{font-size:12px;color:var(--good);margin-top:8px;}
+.chip-group-mini{display:flex;flex-wrap:wrap;gap:4px;max-width:220px;}
+.chip-mini{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer;font-family:'Inter';white-space:nowrap;}
+.chip-mini.active{background:var(--rust);border-color:var(--rust);color:#fff;}
 </style>
 </head>
 <body>
@@ -287,17 +290,35 @@ function editReceb(id){
     <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
     <td>—</td>
     <td>
-      <select class="edit" id="fornSel_${id}">
-        ${FORNECEDORES.map(f=>`<option value="${f}" ${r.fornecedor===f?'selected':''}>${f}</option>`).join('')}
-        <option value="__outro__" ${!isKnown?'selected':''}>Outro</option>
-      </select>
+      <div class="chip-group-mini" id="fornChips_${id}">
+        ${FORNECEDORES.map(f=>`<button type="button" class="chip-mini${r.fornecedor===f?' active':''}" data-val="${f}">${f}</button>`).join('')}
+        <button type="button" class="chip-mini${!isKnown?' active':''}" data-val="__outro__">Outro</button>
+      </div>
+      <input type="hidden" id="fornVal_${id}" value="${isKnown?r.fornecedor:'__outro__'}">
       <input class="edit wide" id="fornOutro_${id}" placeholder="Nome" style="margin-top:4px;${isKnown?'display:none;':''}" value="${!isKnown?(r.fornecedor||''):''}">
     </td>
     <td><input class="edit wide" value="${r.recebedor||''}" data-f="recebedor"></td>
     <td><button class="btn primary" onclick="saveReceb('${id}')">Salvar</button><button class="btn" onclick="renderRecebTable()">Cancelar</button></td>
   `;
-  document.getElementById(`fornSel_${id}`).addEventListener('change',e=>{
-    document.getElementById(`fornOutro_${id}`).style.display = e.target.value==='__outro__'?'block':'none';
+  document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      let val=chip.dataset.val;
+      let hidden=document.getElementById(`fornVal_${id}`);
+      let outroInput=document.getElementById(`fornOutro_${id}`);
+      if(val==='__outro__'){
+        outroInput.style.display='block';
+        hidden.value=outroInput.value;
+        outroInput.focus();
+      }else{
+        outroInput.style.display='none';
+        hidden.value=val;
+      }
+    });
+  });
+  document.getElementById(`fornOutro_${id}`).addEventListener('input',e=>{
+    document.getElementById(`fornVal_${id}`).value=e.target.value;
   });
 }
 
@@ -308,9 +329,7 @@ function saveReceb(id){
     let f=inp.dataset.f;
     updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
   });
-  let sel=document.getElementById(`fornSel_${id}`);
-  let outro=document.getElementById(`fornOutro_${id}`);
-  updates.fornecedor = sel.value==='__outro__' ? outro.value : sel.value;
+  updates.fornecedor=document.getElementById(`fornVal_${id}`).value;
   db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
 }
 </script>

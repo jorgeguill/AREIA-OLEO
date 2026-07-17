@@ -1,1 +1,442 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12151A">
+<title>Painel Forno — Tempo Real</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+<style>
+:root{ --bg:#12151A; --panel:#1B1F25; --panel2:#232830; --line:#333A43; --ink:#EDEAE4; --muted:#8D96A1; --rust:#C1571F; --amber:#E8A33D; --good:#4F9D69; --danger:#D6534A; }
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:radial-gradient(ellipse at top, #1a1f26 0%, var(--bg) 55%);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding-bottom:100px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg, #14181D 0%, rgba(20,24,29,0.94) 100%);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(145deg, var(--rust), #8f3d13);display:flex;align-items:center;justify-content:center;}
+.brand-text .t1{font-family:'Oswald';font-size:15px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+.brand-text .t2{font-size:11px;color:var(--muted);margin-top:2px;}
+.icon-btn{width:34px;height:34px;border-radius:9px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;}
+.status-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;background:#888;}
+.status-dot.on{background:var(--good);box-shadow:0 0 8px var(--good);}
+
+main{max-width:540px;margin:0 auto;padding:16px;}
+.hero{background:linear-gradient(180deg, var(--panel) 0%, #171b20 100%);border:1px solid var(--line);border-radius:18px;padding:22px 18px;position:relative;overflow:hidden;}
+.gauge-wrap{width:200px;height:200px;margin:8px auto;position:relative;}
+.gauge-track{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -135deg, var(--good) 0deg 90deg, var(--amber) 90deg 150deg, var(--danger) 150deg 270deg);}
+.gauge-center{position:absolute;inset:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #262c33, #14171b 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.gauge-value{font-family:'IBM Plex Mono';font-weight:700;font-size:28px;}
+.gauge-unit{font-size:10px;color:var(--muted);margin-top:4px;}
+.gauge-needle{position:absolute;left:50%;top:50%;width:3px;height:70px;background:linear-gradient(180deg, var(--ink), transparent 92%);transform-origin:50% 100%;border-radius:3px;}
+.gauge-hub{position:absolute;left:50%;top:50%;width:10px;height:10px;background:var(--rust);border-radius:50%;transform:translate(-50%,-50%);z-index:3;}
+
+section{margin-top:22px;}
+.sec-title{font-family:'Oswald';font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);margin-bottom:10px;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
+.card-title{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.card-val{font-family:'IBM Plex Mono';font-size:18px;font-weight:700;}
+.card-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+
+.entry{display:flex;gap:11px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start;}
+.entry:last-child{border-bottom:none;}
+.entry-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.entry-dot.turno{background:var(--rust);}
+.entry-dot.receb{background:var(--amber);}
+.entry-main{flex:1;min-width:0;}
+.entry-title{font-size:12px;font-weight:500;}
+.entry-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3;}
+
+.bottom-actions{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;gap:10px;padding:12px 16px 20px;background:linear-gradient(180deg, rgba(18,21,26,0) 0%, #12151A 30%);}
+.btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:12px;border:none;cursor:pointer;font-family:'Inter';font-weight:600;font-size:13px;}
+.btn-primary{background:linear-gradient(180deg, var(--rust), #a2470f);color:#fff;}
+.btn-secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line);}
+
+.overlay{position:fixed;inset:0;background:rgba(8,10,12,0.6);backdrop-filter:blur(2px);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:540px;margin:0 auto;background:var(--panel);border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;padding:8px 18px 20px;transform:translateY(100%);transition:transform .28s;max-height:90vh;overflow-y:auto;}
+.sheet.open{transform:translateY(0);}
+.sheet-handle{width:38px;height:4px;background:var(--line);border-radius:3px;margin:8px auto 14px;}
+.sheet h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:0.06em;font-size:16px;margin:0 0 4px;}
+.sheet .sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.sheet .subhead{font-size:12px;font-weight:600;color:var(--amber);margin:16px 0 8px;text-transform:uppercase;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font-size:14px;font-family:'Inter';}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--rust);outline-offset:1px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sheet-actions{display:flex;gap:10px;margin-top:6px;}
+.sheet-actions .btn{padding:13px;}
+.hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
+.alert{background:rgba(214,83,74,0.1);border:1px solid rgba(214,83,74,0.3);color:var(--danger);padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-2-1-3.5-2.2-5 .3 2-1 3-2.3 2C14.8 8 14 5.5 12 2z" fill="#fff" width="19"/></svg></div>
+    <div class="brand-text"><div class="t1">Painel Forno</div><div class="t2">Sync em tempo real</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;font-size:11px;color:var(--muted);">
+      <span class="status-dot on"></span><span id="syncStatus">conectado</span>
+    </div>
+    <button class="icon-btn" id="btnConfig">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div id="alertBox"></div>
+
+  <div class="hero">
+    <div style="font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Consumo — L/ton</div>
+    <div class="gauge-wrap">
+      <div class="gauge-track" id="gaugeTrack"></div>
+      <div class="gauge-needle" id="needle"></div>
+      <div class="gauge-hub"></div>
+      <div class="gauge-center">
+        <div class="gauge-value mono" id="gaugeVal">—</div>
+        <div class="gauge-unit">L/TON</div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-title">Resumo</div>
+    <div class="card">
+      <div class="card-title">Areia processada</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><div class="card-val" id="totalUmida">—</div><div class="card-sub">m³ úmida</div></div>
+        <div><div class="card-val" id="totalSeca">—</div><div class="card-sub">ton seca</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title">Últimos registros</div>
+    <div class="card">
+      <div id="recentList" style="padding:0;"></div>
+    </div>
+  </section>
+</main>
+
+<div class="bottom-actions">
+  <button class="btn btn-secondary" id="btnReceb">Recebimento</button>
+  <button class="btn btn-primary" id="btnTurno">Registrar Turno</button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="sheet" id="sheetTurno">
+  <div class="sheet-handle"></div>
+  <h3>Registrar turno</h3>
+  <div class="sub">Areia processada, óleo e silo que recebeu.</div>
+  <form id="formTurno">
+    <div class="row2">
+      <div class="field"><label>Data</label><input type="date" name="data" required></div>
+      <div class="field"><label>Turno</label><select name="turno" required><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+    </div>
+    <div class="field"><label>Operador</label><input type="text" name="operador" placeholder="Nome" required></div>
+    
+    <div class="subhead">Areia processada</div>
+    <div class="field"><label>m³ úmida</label><input type="number" step="0.1" min="0" name="m3_umida" placeholder="ex: 5.5" required></div>
+    
+    <div class="subhead">Silo que recebeu</div>
+    <div class="field"><label>Qual silo?</label><select name="silo" required><option value="">-- Escolha --</option><option value="Silo 1 (grande)">Silo 1 (grande)</option><option value="Silo 2 (pequeno)">Silo 2 (pequeno)</option><option value="Silo 3 (pequeno)">Silo 3 (pequeno)</option><option value="Silo 4 (grande)">Silo 4 (grande)</option></select></div>
+    
+    <div class="subhead">Óleo consumido</div>
+    <div class="row2">
+      <div class="field"><label>Início (L)</label><input type="number" step="1" min="0" name="tanque_ini" placeholder="850" required></div>
+      <div class="field"><label>Fim (L)</label><input type="number" step="1" min="0" name="tanque_fim" placeholder="620" required></div>
+    </div>
+    <div class="field"><label>Recebido (L)</label><input type="number" step="1" min="0" name="oleo_receb" value="0"></div>
+    <div class="field"><label>Consumo L/ton (opcional)</label><input type="number" step="0.01" min="0" name="consumo_manual" placeholder="deixa em branco para calcular automático"></div>
+    <div class="hint">Se deixar em branco, o app calcula automático. Se preencher, registra o valor que você digitar.</div>
+    
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="sheetReceb">
+  <div class="sheet-handle"></div>
+  <h3>Recebimento de óleo</h3>
+  <div class="sub">Registro de descarga com fornecedor.</div>
+  <form id="formReceb">
+    <div class="row2">
+      <div class="field"><label>Data</label><input type="date" name="data" required></div>
+      <div class="field"><label>Hora</label><input type="time" name="hora" required></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Antes (L)</label><input type="number" step="1" min="0" name="antes" required></div>
+      <div class="field"><label>Depois (L)</label><input type="number" step="1" min="0" name="depois" required></div>
+    </div>
+    <div class="field"><label>Fornecedor</label><input type="text" name="fornecedor" placeholder="Nome do fornecedor" required></div>
+    <div class="field"><label>Recebedor</label><input type="text" name="recebedor" placeholder="Nome" required></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="sheetConfig">
+  <div class="sheet-handle"></div>
+  <h3>Configurações</h3>
+  <div class="sub">Firebase e parâmetros da areia.</div>
+  <form id="formConfig">
+    <div class="alert">
+      ⚠️ Para sincronizar dados com toda a equipe, configure o Firebase abaixo.
+    </div>
+    <div class="subhead">Firebase (copie de seu projeto)</div>
+    <div class="field"><label>API Key</label><input type="text" name="apiKey" placeholder="AIzaSy..." value=""></div>
+    <div class="field"><label>Database URL</label><input type="text" name="databaseURL" placeholder="https://xxx.firebaseio.com" value=""></div>
+    <div class="hint">Se deixar em branco, usa localStorage (dados locais apenas).</div>
+    
+    <div class="subhead">Parâmetros da areia</div>
+    <div class="row2">
+      <div class="field"><label>Umidade bruta (%)</label><input type="number" step="0.1" min="0" max="50" name="umidade" value="8" required></div>
+      <div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" min="0.1" name="densidade" value="1.5" required></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Meta L/ton</label><input type="number" step="0.1" min="0.1" name="meta" value="8" required></div>
+      <div class="field"><label>Tolerância (%)</label><input type="number" step="1" min="1" name="tolerancia" value="15" required></div>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const TURNOS="turnos",RECEB="recebimentos",CFG="cfg",PARAMS="parametros";
+let state={cfg:{umidade:8,densidade:1.5,meta:8,tolerancia:15},turnos:[],recebimentos:[]};
+let firebaseDb=null,useFirebase=false;
+
+function uid(){return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+function initFirebase(){
+  let cfg=load(CFG,{});
+  if(!cfg.apiKey||!cfg.databaseURL){console.log("Firebase desativado");useFirebase=false;return;}
+  try{
+    const firebaseApp=firebase.initializeApp({
+      apiKey:cfg.apiKey,
+      databaseURL:cfg.databaseURL,
+      projectId:"painel-forno"
+    },'app');
+    firebaseDb=firebase.database(firebaseApp);
+    useFirebase=true;
+    attachListeners();
+    document.getElementById('syncStatus').textContent='sincronizado';
+    document.querySelector('.status-dot').classList.add('on');
+  }catch(e){
+    console.error("Firebase init error:",e);
+    useFirebase=false;
+  }
+}
+
+function snapToList(val){
+  if(!val)return [];
+  return Object.keys(val).map(id=>({id,...val[id]}));
+}
+
+function attachListeners(){
+  if(!useFirebase||!firebaseDb)return;
+  firebaseDb.ref(TURNOS).on('value',snap=>{
+    state.turnos=snapToList(snap.val());
+    try{localStorage.setItem(TURNOS,JSON.stringify(state.turnos));}catch(e){}
+    render();
+  });
+  firebaseDb.ref(RECEB).on('value',snap=>{
+    state.recebimentos=snapToList(snap.val());
+    try{localStorage.setItem(RECEB,JSON.stringify(state.recebimentos));}catch(e){}
+    render();
+  });
+  firebaseDb.ref(PARAMS).on('value',snap=>{
+    let v=snap.val();
+    if(v){
+      state.cfg={...state.cfg,...v};
+      try{localStorage.setItem(CFG,JSON.stringify(state.cfg));}catch(e){}
+      render();
+    }
+  });
+}
+
+function save(k,v){
+  try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.error(e);}
+}
+
+function load(k,d){
+  try{let v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}
+}
+
+function addEntry(k,entry){
+  if(useFirebase&&firebaseDb){
+    firebaseDb.ref(k).push(entry).catch(e=>{
+      console.error("Firebase save error:",e);
+      addLocal(k,entry);
+    });
+  }else{
+    addLocal(k,entry);
+  }
+}
+
+function addLocal(k,entry){
+  entry={id:uid(),...entry};
+  if(k===TURNOS)state.turnos.push(entry);else state.recebimentos.push(entry);
+  save(k,k===TURNOS?state.turnos:state.recebimentos);
+  render();
+}
+
+function init(){
+  state.cfg=load(CFG,state.cfg);
+  state.turnos=load(TURNOS,[]);
+  state.recebimentos=load(RECEB,[]);
+  initFirebase();
+  render();
+}
+
+function compute(t){
+  let m3u=Number(t.m3_umida),m3s=m3u*(1-state.cfg.umidade/100),ton=m3s*state.cfg.densidade;
+  let oleo=(Number(t.tanque_ini)-Number(t.tanque_fim))+Number(t.oleo_receb||0);
+  let lton=Number(t.consumo_manual)||null;
+  if(!lton&&ton>0.01)lton=oleo/ton;
+  return{m3u,m3s,ton,oleo,lton};
+}
+
+function updateAlert(c){
+  let box=document.getElementById('alertBox');
+  if(!c.lton){box.innerHTML='';return;}
+  let meta=state.cfg.meta,tol=state.cfg.tolerancia;
+  let limite=meta*(1+tol/100);
+  if(c.lton>limite){
+    box.innerHTML=`<div class="alert">⚠️ Consumo acima da meta: ${c.lton.toFixed(2)} L/ton (meta ${meta} ±${tol}%, limite ${limite.toFixed(2)} L/ton)</div>`;
+  }else{
+    box.innerHTML='';
+  }
+}
+
+function render(){
+  let turnos=state.turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let last=turnos[turnos.length-1],totU=0,totT=0;
+  turnos.forEach(t=>{totU+=Number(t.m3_umida||0);totT+=Number(compute(t).ton||0)});
+  let c=last?compute(last):{lton:null};
+  let meta=state.cfg.meta||8,tol=state.cfg.tolerancia||15;
+  let limite=meta*(1+tol/100);
+  let scaleMax=Math.max(meta*2.5,limite*1.2,(c.lton||0)*1.1);
+  let goodDeg=Math.min(270,(meta/scaleMax)*270);
+  let amberDeg=Math.min(270,(limite/scaleMax)*270);
+  document.getElementById('gaugeTrack').style.background=`conic-gradient(from -135deg, var(--good) 0deg ${goodDeg}deg, var(--amber) ${goodDeg}deg ${amberDeg}deg, var(--danger) ${amberDeg}deg 270deg)`;
+  let val=document.getElementById('gaugeVal');
+  val.textContent=c.lton?c.lton.toFixed(2):'—';
+  let angle=c.lton?-135+Math.min(270,(c.lton/scaleMax)*270):0;
+  document.getElementById('needle').style.transform=`translate(-50%,-100%) rotate(${angle}deg)`;
+  document.getElementById('totalUmida').textContent=totU.toFixed(2);
+  document.getElementById('totalSeca').textContent=totT.toFixed(2);
+  updateAlert(c);
+  let list=document.getElementById('recentList');
+  let html='';
+  turnos.slice(-8).reverse().forEach(t=>{
+    let c=compute(t);
+    html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno} • ${t.operador}</div><div class="entry-sub">${t.data} • ${t.silo}</div></div><div class="entry-val">${c.lton?c.lton.toFixed(2):'—'}</div></div>`;
+  });
+  state.recebimentos.slice(-5).reverse().forEach(r=>{
+    html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor}</div><div class="entry-sub">${r.data} ${r.hora}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`;
+  });
+  list.innerHTML=html||'<div style="padding:8px;color:var(--muted);font-size:12px;">Sem registros</div>';
+}
+
+document.getElementById('btnTurno').addEventListener('click',()=>{
+  document.querySelector('#formTurno [name=data]').value=new Date().toISOString().slice(0,10);
+  document.getElementById('sheetTurno').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+});
+
+document.getElementById('btnReceb').addEventListener('click',()=>{
+  document.querySelector('#formReceb [name=data]').value=new Date().toISOString().slice(0,10);
+  document.querySelector('#formReceb [name=hora]').value=new Date().toTimeString().slice(0,5);
+  document.getElementById('sheetReceb').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+});
+
+document.getElementById('btnConfig').addEventListener('click',()=>{
+  let f=document.getElementById('formConfig');
+  f.apiKey.value=state.cfg.apiKey||'';
+  f.databaseURL.value=state.cfg.databaseURL||'';
+  f.umidade.value=state.cfg.umidade;
+  f.densidade.value=state.cfg.densidade;
+  f.meta.value=state.cfg.meta;
+  f.tolerancia.value=state.cfg.tolerancia;
+  document.getElementById('sheetConfig').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+});
+
+function close(){
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.getElementById('overlay').addEventListener('click',close);
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
+
+document.getElementById('formTurno').addEventListener('submit',e=>{
+  e.preventDefault();
+  let f=e.target;
+  let entry={
+    data:f.data.value,turno:f.turno.value,operador:f.operador.value,
+    m3_umida:Number(f.m3_umida.value),silo:f.silo.value,
+    tanque_ini:Number(f.tanque_ini.value),tanque_fim:Number(f.tanque_fim.value),
+    oleo_receb:Number(f.oleo_receb.value||0),
+    consumo_manual:f.consumo_manual.value?Number(f.consumo_manual.value):null
+  };
+  addEntry(TURNOS,entry);
+  f.reset();
+  close();
+  alert('✅ Turno salvo!');
+});
+
+document.getElementById('formReceb').addEventListener('submit',e=>{
+  e.preventDefault();
+  let f=e.target;
+  let entry={
+    data:f.data.value,hora:f.hora.value,
+    antes:Number(f.antes.value),depois:Number(f.depois.value),
+    fornecedor:f.fornecedor.value,recebedor:f.recebedor.value
+  };
+  addEntry(RECEB,entry);
+  f.reset();
+  close();
+  alert('✅ Recebimento salvo!');
+});
+
+document.getElementById('formConfig').addEventListener('submit',e=>{
+  e.preventDefault();
+  let f=e.target;
+  let creds={apiKey:f.apiKey.value,databaseURL:f.databaseURL.value};
+  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value)};
+  state.cfg={...creds,...params};
+  save(CFG,state.cfg);
+  close();
+  if(useFirebase&&firebaseDb){
+    firebaseDb.ref(PARAMS).set(params).catch(e=>console.error("Firebase params save error:",e));
+  }
+  if(creds.apiKey&&creds.databaseURL&&!useFirebase){initFirebase();}
+  render();
+  alert('✅ Configurações salvas!');
+});
+
+init();
+</script>
+</body>
+</html>

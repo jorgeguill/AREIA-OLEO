@@ -209,7 +209,7 @@ function renderCharts(){
 }
 
 function renderTurnosTable(){
-  let sorted=turnos.slice().sort((a,b)=>new Date(b.data)-new Date(a.data));
+  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let tbody=document.querySelector('#tblTurnos tbody');
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t);
@@ -224,7 +224,7 @@ function renderTurnosTable(){
 }
 
 function renderRecebTable(){
-  let sorted=recebimentos.slice().sort((a,b)=>new Date(b.data+'T'+(b.hora||'00:00'))-new Date(a.data+'T'+(a.hora||'00:00')));
+  let sorted=recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   let tbody=document.querySelector('#tblReceb tbody');
   tbody.innerHTML=sorted.map(r=>`<tr data-id="${r.id}">
       <td>${r.data}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>

@@ -135,10 +135,10 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
 </section>
 
 <script>
-const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1};
 const app=firebase.initializeApp(DEFAULT_CFG,'supervisorApp');
 const db=firebase.database(app);
-let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia};
+let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3};
 let turnos=[], recebimentos=[];
 let chartLton,chartAreia,chartOleo;
 
@@ -150,11 +150,24 @@ function formatDate(iso){
   return `${d}-${m}-${y}`;
 }
 
+function conchaM3(){ return Number(cfg.concha_m3)||2.1; }
+function turnoConchas(t){
+  if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0);
+  return Number(t.conchas)||0;
+}
 function compute(t){
-  let m3u=Number(t.m3_umida),m3s=m3u*(1-cfg.umidade/100),ton=m3s*cfg.densidade;
-  let oleo=(Number(t.tanque_ini)-Number(t.tanque_fim))+Number(t.oleo_receb||0);
+  let m3u=Number(t.m3_umida);
+  if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c) m3u=c*conchaM3(); }
+  m3u=m3u||0;
+  let m3s=m3u*(1-cfg.umidade/100),ton=m3s*cfg.densidade;
+  let oleo=0;
+  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){
+    oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim));
+  }
+  oleo+=Number(t.oleo_receb||0);
+  oleo+=Number(t.oleo_consumido||0);
   let lton=Number(t.consumo_manual)||null;
-  if(!lton&&ton>0.01)lton=oleo/ton;
+  if(!lton&&oleo>0&&ton>0.01)lton=oleo/ton;
   return{m3u,m3s,ton,oleo,lton};
 }
 

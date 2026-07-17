@@ -53,6 +53,7 @@ section{margin-top:22px;}
 .entry-main{flex:1;min-width:0;}
 .entry-title{font-size:12px;font-weight:500;}
 .entry-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3;}
+.entry-val{font-family:'IBM Plex Mono';font-size:12px;font-weight:600;}
 
 .bottom-actions{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;gap:10px;padding:12px 16px 20px;background:linear-gradient(180deg, rgba(18,21,26,0) 0%, #12151A 30%);}
 .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:12px;border:none;cursor:pointer;font-family:'Inter';font-weight:600;font-size:13px;}
@@ -61,7 +62,7 @@ section{margin-top:22px;}
 
 .overlay{position:fixed;inset:0;background:rgba(8,10,12,0.6);backdrop-filter:blur(2px);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;}
 .overlay.open{opacity:1;pointer-events:auto;}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:540px;margin:0 auto;background:var(--panel);border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;padding:8px 18px 20px;transform:translateY(100%);transition:transform .28s;max-height:90vh;overflow-y:auto;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:540px;margin:0 auto;background:var(--panel);border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;padding:8px 18px 20px;transform:translateY(100%);transition:transform .28s;max-height:92vh;overflow-y:auto;}
 .sheet.open{transform:translateY(0);}
 .sheet-handle{width:38px;height:4px;background:var(--line);border-radius:3px;margin:8px auto 14px;}
 .sheet h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:0.06em;font-size:16px;margin:0 0 4px;}
@@ -80,6 +81,17 @@ section{margin-top:22px;}
 .chip-group{display:flex;flex-wrap:wrap;gap:8px;}
 .chip{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 14px;border-radius:20px;font-size:13px;cursor:pointer;font-family:'Inter';}
 .chip.active{background:var(--rust);border-color:var(--rust);color:#fff;}
+
+/* Lotes */
+.lote-row{display:grid;grid-template-columns:1fr 1fr 64px 32px;gap:7px;align-items:end;margin-bottom:8px;}
+.lote-row input{padding:9px 8px;font-size:13px;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;font-family:'Inter';}
+.lote-del{width:32px;height:40px;border-radius:9px;background:rgba(214,83,74,0.12);border:1px solid rgba(214,83,74,0.3);color:var(--danger);font-size:16px;cursor:pointer;line-height:1;}
+.lote-add{width:100%;background:var(--panel2);border:1px dashed var(--line);color:var(--amber);padding:11px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter';margin-top:2px;}
+.lote-head{display:grid;grid-template-columns:1fr 1fr 64px 32px;gap:7px;margin-bottom:4px;}
+.lote-head span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+.lotes-resumo{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+.lotes-resumo b{font-family:'IBM Plex Mono';font-size:16px;}
+.lotes-resumo .rz-m3{color:var(--amber);}
 </style>
 </head>
 <body>
@@ -144,33 +156,64 @@ section{margin-top:22px;}
 <div class="sheet" id="sheetTurno">
   <div class="sheet-handle"></div>
   <h3>Registrar turno</h3>
-  <div class="sub">Areia processada, óleo e silo que recebeu.</div>
+  <div class="sub">Lance cada lote de areia sacada com hora e conchas.</div>
   <form id="formTurno">
-    <div class="row2">
-      <div class="field"><label>Data</label><input type="date" name="data" required></div>
-      <div class="field"><label>Turno</label><select name="turno" required><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+    <div class="field"><label>Data</label><input type="date" name="data" required></div>
+
+    <div class="field">
+      <label>Turno</label>
+      <div class="chip-group" id="turnoChips">
+        <button type="button" class="chip" data-val="Manhã">Manhã</button>
+        <button type="button" class="chip" data-val="Tarde">Tarde</button>
+        <button type="button" class="chip" data-val="Noite">Noite</button>
+      </div>
+      <input type="hidden" name="turno">
     </div>
-    <div class="field"><label>Operador</label><input type="text" name="operador" placeholder="Nome" required></div>
 
-    <div class="subhead">Areia processada</div>
-    <div class="field"><label>m³ úmida</label><input type="number" step="0.1" min="0" name="m3_umida" placeholder="ex: 5.5" required></div>
-
-    <div class="subhead">Silo que recebeu</div>
-    <div class="field"><label>Qual silo?</label><select name="silo" required><option value="">-- Escolha --</option><option value="Silo 1 (grande)">Silo 1 (grande)</option><option value="Silo 2 (pequeno)">Silo 2 (pequeno)</option><option value="Silo 3 (pequeno)">Silo 3 (pequeno)</option><option value="Silo 4 (grande)">Silo 4 (grande)</option></select></div>
-
-    <div class="subhead">Óleo consumido</div>
-    <div class="row2">
-      <div class="field"><label>Início (L)</label><input type="number" step="1" min="0" name="tanque_ini" placeholder="850" required></div>
-      <div class="field"><label>Fim (L)</label><input type="number" step="1" min="0" name="tanque_fim" placeholder="620" required></div>
+    <div class="field">
+      <label>Operador</label>
+      <div class="chip-group" id="operadorChips"></div>
+      <input type="hidden" name="operador">
     </div>
-    <div class="field"><label>Recebido (L)</label><input type="number" step="1" min="0" name="oleo_receb" value="0" readonly></div>
-    <div class="hint">Calculado automaticamente: soma de tudo lançado em "Recebimento" nesse mesmo dia.</div>
-    <div class="field"><label>Consumo L/ton (opcional)</label><input type="number" step="0.01" min="0" name="consumo_manual" placeholder="deixa em branco para calcular automático"></div>
-    <div class="hint">Se deixar em branco, o app calcula automático. Se preencher, registra o valor que você digitar.</div>
+    <div class="field" id="operadorOutroWrap" style="display:none;">
+      <label>Nome do operador</label>
+      <input type="text" id="operadorOutroInput" placeholder="Digite o nome">
+    </div>
+
+    <div class="field">
+      <label>Silo(s) que recebeu</label>
+      <div class="chip-group" id="siloChips">
+        <button type="button" class="chip" data-val="01">Silo 1</button>
+        <button type="button" class="chip" data-val="02">Silo 2</button>
+        <button type="button" class="chip" data-val="03">Silo 3</button>
+        <button type="button" class="chip" data-val="04">Silo 4</button>
+      </div>
+      <input type="hidden" name="silo">
+    </div>
+
+    <div class="subhead">Lotes sacados</div>
+    <div class="hint" style="margin-top:0;">Cada vez que a equipe carrega o reco-reco é um lote. Informe hora de início, fim e quantas conchas da carregadeira foram nesse lote.</div>
+    <div class="lote-head">
+      <span>Início</span><span>Fim</span><span>Conchas</span><span></span>
+    </div>
+    <div id="lotesList"></div>
+    <button type="button" class="lote-add" id="btnAddLote">+ Adicionar lote</button>
+    <div class="lotes-resumo">
+      <span id="rzLotes">0 lotes · 0 conchas</span>
+      <span class="rz-m3"><b id="rzM3">0.0</b> m³ úmida</span>
+    </div>
+
+    <div class="subhead">Óleo (opcional)</div>
+    <div class="hint" style="margin-top:0;">Só preencha se souber. Sem isso, o app registra a areia normalmente e o L/ton do turno fica "—".</div>
+    <div class="field"><label>Óleo consumido no turno (L)</label><input type="number" step="1" min="0" name="oleo_consumido" placeholder="deixe em branco se não souber"></div>
+    <div class="field" id="recebInfoWrap" style="margin-top:-4px;">
+      <label>Óleo recebido neste dia (automático)</label>
+      <input type="text" id="recebInfo" readonly value="0 L">
+    </div>
 
     <div class="sheet-actions">
       <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar</button>
+      <button type="submit" class="btn btn-primary">Salvar turno</button>
     </div>
   </form>
 </div>
@@ -231,9 +274,10 @@ section{margin-top:22px;}
       <div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" min="0.1" name="densidade" value="1.5" required></div>
     </div>
     <div class="row2">
+      <div class="field"><label>m³ por concha</label><input type="number" step="0.01" min="0.1" name="concha_m3" value="2.1" required></div>
       <div class="field"><label>Meta L/ton</label><input type="number" step="0.1" min="0.1" name="meta" value="8" required></div>
-      <div class="field"><label>Tolerância (%)</label><input type="number" step="1" min="1" name="tolerancia" value="15" required></div>
     </div>
+    <div class="field"><label>Tolerância (%)</label><input type="number" step="1" min="1" name="tolerancia" value="15" required></div>
     <div class="sheet-actions">
       <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar</button>
@@ -243,11 +287,14 @@ section{margin-top:22px;}
 
 <script>
 const TURNOS="turnos",RECEB="recebimentos",CFG="cfg",PARAMS="parametros";
-const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:8,tolerancia:15};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1};
+const OPERADORES=["Anailson","Livio","William","João Victor","Renato","Rafael"];
 let state={cfg:{...DEFAULT_CFG},turnos:[],recebimentos:[]};
 let firebaseDb=null,useFirebase=false;
+let lotes=[];
 
 function uid(){return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function conchaM3(){ return Number(state.cfg.concha_m3)||2.1; }
 
 function setSyncStatus(text,ok){
   document.getElementById('syncStatus').textContent=text;
@@ -317,22 +364,17 @@ function attachListeners(){
 function save(k,v){
   try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.error(e);}
 }
-
 function load(k,d){
   try{let v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}
 }
 
 function addEntry(k,entry){
   if(useFirebase&&firebaseDb){
-    firebaseDb.ref(k).push(entry).catch(e=>{
-      firebaseError(e);
-      addLocal(k,entry);
-    });
+    firebaseDb.ref(k).push(entry).catch(e=>{ firebaseError(e); addLocal(k,entry); });
   }else{
     addLocal(k,entry);
   }
 }
-
 function addLocal(k,entry){
   entry={id:uid(),...entry};
   if(k===TURNOS)state.turnos.push(entry);else state.recebimentos.push(entry);
@@ -344,15 +386,33 @@ function init(){
   state.cfg={...DEFAULT_CFG,...load(CFG,{})};
   state.turnos=load(TURNOS,[]);
   state.recebimentos=load(RECEB,[]);
+  buildOperadorChips();
   initFirebase();
   render();
 }
 
+// Total de conchas de um turno (novo schema com lotes, ou campo antigo)
+function turnoConchas(t){
+  if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0);
+  return Number(t.conchas)||0;
+}
+
 function compute(t){
-  let m3u=Number(t.m3_umida),m3s=m3u*(1-state.cfg.umidade/100),ton=m3s*state.cfg.densidade;
-  let oleo=(Number(t.tanque_ini)-Number(t.tanque_fim))+Number(t.oleo_receb||0);
+  let m3u=Number(t.m3_umida);
+  if(!isFinite(m3u)||m3u===0){
+    let c=turnoConchas(t);
+    if(c) m3u=c*conchaM3();
+  }
+  m3u=m3u||0;
+  let m3s=m3u*(1-state.cfg.umidade/100), ton=m3s*state.cfg.densidade;
+  let oleo=0;
+  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){
+    oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim));
+  }
+  oleo+=Number(t.oleo_receb||0);
+  oleo+=Number(t.oleo_consumido||0);
   let lton=Number(t.consumo_manual)||null;
-  if(!lton&&ton>0.01)lton=oleo/ton;
+  if(!lton&&oleo>0&&ton>0.01)lton=oleo/ton;
   return{m3u,m3s,ton,oleo,lton};
 }
 
@@ -378,7 +438,7 @@ function updateAlert(c){
 function render(){
   let turnos=state.turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let last=turnos[turnos.length-1],totU=0,totT=0;
-  turnos.forEach(t=>{totU+=Number(t.m3_umida||0);totT+=Number(compute(t).ton||0)});
+  turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
   let c=last?compute(last):{lton:null};
   let meta=state.cfg.meta||8,tol=state.cfg.tolerancia||15;
   let limite=meta*(1+tol/100);
@@ -386,40 +446,147 @@ function render(){
   let goodDeg=Math.min(270,(meta/scaleMax)*270);
   let amberDeg=Math.min(270,(limite/scaleMax)*270);
   document.getElementById('gaugeTrack').style.background=`conic-gradient(from -135deg, var(--good) 0deg ${goodDeg}deg, var(--amber) ${goodDeg}deg ${amberDeg}deg, var(--danger) ${amberDeg}deg 270deg)`;
-  let val=document.getElementById('gaugeVal');
-  val.textContent=c.lton?c.lton.toFixed(2):'—';
+  document.getElementById('gaugeVal').textContent=c.lton?c.lton.toFixed(2):'—';
   let angle=c.lton?-135+Math.min(270,(c.lton/scaleMax)*270):0;
   document.getElementById('needle').style.transform=`translate(-50%,-100%) rotate(${angle}deg)`;
-  document.getElementById('totalUmida').textContent=totU.toFixed(2);
-  document.getElementById('totalSeca').textContent=totT.toFixed(2);
+  document.getElementById('totalUmida').textContent=totU.toFixed(1);
+  document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);
   let list=document.getElementById('recentList');
   let html='';
   turnos.slice(-8).reverse().forEach(t=>{
-    let c=compute(t);
-    html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno} • ${t.operador}</div><div class="entry-sub">${formatDate(t.data)} • ${t.silo}</div></div><div class="entry-val">${c.lton?c.lton.toFixed(2):'—'}</div></div>`;
+    let cc=compute(t);
+    let nl=(Array.isArray(t.lotes)?t.lotes.length:(t.lotes_no_turno||0));
+    let ncc=turnoConchas(t);
+    let extra=ncc?` • ${ncc} conchas`+(nl?` / ${nl} lotes`:''):'';
+    html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno||''} • ${t.operador||'—'}</div><div class="entry-sub">${formatDate(t.data)} • Silo ${t.silo||'—'}${extra}</div></div><div class="entry-val">${cc.lton?cc.lton.toFixed(2):'—'}</div></div>`;
   });
   let recebSorted=state.recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   recebSorted.slice(-5).reverse().forEach(r=>{
-    html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`;
+    html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor||'—'}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora||''}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`;
   });
   list.innerHTML=html||'<div style="padding:8px;color:var(--muted);font-size:12px;">Sem registros</div>';
 }
 
+/* ---------- Lotes ---------- */
+function autoTurno(){
+  let h=new Date().getHours();
+  if(h>=6&&h<14)return 'Manhã';
+  if(h>=14&&h<22)return 'Tarde';
+  return 'Noite';
+}
+function nowHM(){ return new Date().toTimeString().slice(0,5); }
+
+function renderLotes(){
+  let cont=document.getElementById('lotesList');
+  cont.innerHTML=lotes.map((l,i)=>`
+    <div class="lote-row">
+      <input type="time" value="${l.ini||''}" data-i="${i}" data-f="ini">
+      <input type="time" value="${l.fim||''}" data-i="${i}" data-f="fim">
+      <input type="number" min="1" step="1" value="${l.conchas||''}" placeholder="0" data-i="${i}" data-f="conchas">
+      <button type="button" class="lote-del" data-del="${i}">×</button>
+    </div>
+  `).join('');
+  cont.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      let i=+e.target.dataset.i, f=e.target.dataset.f;
+      lotes[i][f]=e.target.value;
+      recalcResumo();
+    });
+  });
+  cont.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click',()=>{ lotes.splice(+b.dataset.del,1); renderLotes(); });
+  });
+  recalcResumo();
+}
+function recalcResumo(){
+  let nl=lotes.filter(l=>Number(l.conchas)>0).length;
+  let nc=lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0);
+  document.getElementById('rzLotes').textContent=`${nl} lote${nl===1?'':'s'} · ${nc} conchas`;
+  document.getElementById('rzM3').textContent=(nc*conchaM3()).toFixed(1);
+}
+function addLote(){
+  let ini='';
+  if(lotes.length){ ini=lotes[lotes.length-1].fim||''; }
+  else { ini=nowHM(); }
+  lotes.push({ini,fim:'',conchas:''});
+  renderLotes();
+}
+
+/* ---------- Operador chips ---------- */
+function buildOperadorChips(){
+  let box=document.getElementById('operadorChips');
+  box.innerHTML=OPERADORES.map(o=>`<button type="button" class="chip" data-val="${o}">${o}</button>`).join('')
+    +`<button type="button" class="chip" data-val="__outro__">Outro</button>`;
+  box.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      box.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      let val=chip.dataset.val;
+      let hidden=document.querySelector('#formTurno [name=operador]');
+      let outroWrap=document.getElementById('operadorOutroWrap');
+      if(val==='__outro__'){
+        outroWrap.style.display='block';
+        hidden.value=document.getElementById('operadorOutroInput').value;
+        document.getElementById('operadorOutroInput').focus();
+      }else{
+        outroWrap.style.display='none';
+        hidden.value=val;
+      }
+    });
+  });
+}
+document.getElementById('operadorOutroInput').addEventListener('input',e=>{
+  document.querySelector('#formTurno [name=operador]').value=e.target.value;
+});
+
+/* ---------- Turno chips ---------- */
+document.querySelectorAll('#turnoChips .chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    document.querySelector('#formTurno [name=turno]').value=chip.dataset.val;
+  });
+});
+
+/* ---------- Silo chips (multi) ---------- */
+function updateSiloHidden(){
+  let vals=[...document.querySelectorAll('#siloChips .chip.active')].map(c=>c.dataset.val).sort();
+  document.querySelector('#formTurno [name=silo]').value=vals.join(', ');
+}
+document.querySelectorAll('#siloChips .chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{ chip.classList.toggle('active'); updateSiloHidden(); });
+});
+
+/* ---------- Recebido automático (info) ---------- */
 function updateRecebidoAuto(){
   let data=document.querySelector('#formTurno [name=data]').value;
   let total=state.recebimentos.filter(r=>r.data===data).reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0);
-  document.querySelector('#formTurno [name=oleo_receb]').value=total;
+  document.getElementById('recebInfo').value=total.toFixed(0)+' L';
 }
 
+/* ---------- Abrir/fechar ---------- */
 document.getElementById('btnTurno').addEventListener('click',()=>{
-  document.querySelector('#formTurno [name=data]').value=new Date().toISOString().slice(0,10);
+  let f=document.getElementById('formTurno');
+  f.reset();
+  f.data.value=new Date().toISOString().slice(0,10);
+  let at=autoTurno();
+  document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at));
+  f.turno.value=at;
+  document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('operadorOutroWrap').style.display='none';
+  document.getElementById('operadorOutroInput').value='';
+  f.operador.value='';
+  document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active'));
+  f.silo.value='';
+  lotes=[{ini:nowHM(),fim:'',conchas:''}];
+  renderLotes();
   updateRecebidoAuto();
   document.getElementById('sheetTurno').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 });
-
 document.querySelector('#formTurno [name=data]').addEventListener('change',updateRecebidoAuto);
+document.getElementById('btnAddLote').addEventListener('click',addLote);
 
 document.getElementById('btnReceb').addEventListener('click',()=>{
   document.querySelector('#formReceb [name=data]').value=new Date().toISOString().slice(0,10);
@@ -434,6 +601,7 @@ document.getElementById('btnConfig').addEventListener('click',()=>{
   f.databaseURL.value=state.cfg.databaseURL||'';
   f.umidade.value=state.cfg.umidade;
   f.densidade.value=state.cfg.densidade;
+  f.concha_m3.value=state.cfg.concha_m3||2.1;
   f.meta.value=state.cfg.meta;
   f.tolerancia.value=state.cfg.tolerancia;
   document.getElementById('sheetConfig').classList.add('open');
@@ -444,10 +612,10 @@ function close(){
   document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open'));
   document.getElementById('overlay').classList.remove('open');
 }
-
 document.getElementById('overlay').addEventListener('click',close);
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
 
+/* ---------- Fornecedor chips (recebimento) ---------- */
 document.querySelectorAll('#fornecedorChips .chip').forEach(chip=>{
   chip.addEventListener('click',()=>{
     document.querySelectorAll('#fornecedorChips .chip').forEach(c=>c.classList.remove('active'));
@@ -469,22 +637,35 @@ document.getElementById('fornecedorOutroInput').addEventListener('input',e=>{
   document.querySelector('#formReceb [name=fornecedor]').value=e.target.value;
 });
 
+/* ---------- Submit turno ---------- */
 document.getElementById('formTurno').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
+  if(!f.turno.value){alert('Escolha o turno.');return;}
+  if(!f.operador.value){alert('Escolha o operador.');return;}
+  let lotesLimpos=lotes
+    .map(l=>({ini:l.ini||'',fim:l.fim||'',conchas:Number(l.conchas)||0}))
+    .filter(l=>l.conchas>0);
+  if(!lotesLimpos.length){alert('Adicione pelo menos um lote com conchas.');return;}
+  let totalConchas=lotesLimpos.reduce((s,l)=>s+l.conchas,0);
+  let m3u=+(totalConchas*conchaM3()).toFixed(1);
   let entry={
-    data:f.data.value,turno:f.turno.value,operador:f.operador.value,
-    m3_umida:Number(f.m3_umida.value),silo:f.silo.value,
-    tanque_ini:Number(f.tanque_ini.value),tanque_fim:Number(f.tanque_fim.value),
-    oleo_receb:Number(f.oleo_receb.value||0),
-    consumo_manual:f.consumo_manual.value?Number(f.consumo_manual.value):null
+    data:f.data.value,
+    turno:f.turno.value,
+    operador:f.operador.value,
+    silo:f.silo.value,
+    lotes:lotesLimpos,
+    conchas:totalConchas,
+    m3_umida:m3u,
+    origem:'app'
   };
+  if(f.oleo_consumido.value!=='') entry.oleo_consumido=Number(f.oleo_consumido.value);
   addEntry(TURNOS,entry);
-  f.reset();
   close();
-  alert('✅ Turno salvo!');
+  alert('✅ Turno salvo! '+totalConchas+' conchas · '+m3u.toFixed(1)+' m³');
 });
 
+/* ---------- Submit recebimento ---------- */
 document.getElementById('formReceb').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
@@ -503,11 +684,12 @@ document.getElementById('formReceb').addEventListener('submit',e=>{
   alert('✅ Recebimento salvo!');
 });
 
+/* ---------- Submit config ---------- */
 document.getElementById('formConfig').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
   let creds={apiKey:f.apiKey.value,databaseURL:f.databaseURL.value};
-  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value)};
+  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),concha_m3:Number(f.concha_m3.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value)};
   state.cfg={...creds,...params};
   save(CFG,state.cfg);
   close();

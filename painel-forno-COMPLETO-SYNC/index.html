@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151A">
 <title>Painel Forno — Tempo Real</title>
+<link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -75,6 +76,9 @@ section{margin-top:22px;}
 .sheet-actions .btn{padding:13px;}
 .hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .alert{background:rgba(214,83,74,0.1);border:1px solid rgba(214,83,74,0.3);color:var(--danger);padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px;}
+.chip-group{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 14px;border-radius:20px;font-size:13px;cursor:pointer;font-family:'Inter';}
+.chip.active{background:var(--rust);border-color:var(--rust);color:#fff;}
 </style>
 </head>
 <body>
@@ -182,7 +186,22 @@ section{margin-top:22px;}
       <div class="field"><label>Antes (L)</label><input type="number" step="1" min="0" name="antes" required></div>
       <div class="field"><label>Depois (L)</label><input type="number" step="1" min="0" name="depois" required></div>
     </div>
-    <div class="field"><label>Fornecedor</label><input type="text" name="fornecedor" placeholder="Nome do fornecedor" required></div>
+    <div class="field">
+      <label>Fornecedor</label>
+      <div class="chip-group" id="fornecedorChips">
+        <button type="button" class="chip" data-val="Manoel">Manoel</button>
+        <button type="button" class="chip" data-val="Madalena">Madalena</button>
+        <button type="button" class="chip" data-val="Walk">Walk</button>
+        <button type="button" class="chip" data-val="Wedeson">Wedeson</button>
+        <button type="button" class="chip" data-val="Antonio">Antonio</button>
+        <button type="button" class="chip" data-val="__outro__">Outro</button>
+      </div>
+      <input type="hidden" name="fornecedor">
+    </div>
+    <div class="field" id="fornecedorOutroWrap" style="display:none;">
+      <label>Nome do fornecedor</label>
+      <input type="text" id="fornecedorOutroInput" placeholder="Digite o nome">
+    </div>
     <div class="field"><label>Recebedor</label><input type="text" name="recebedor" placeholder="Nome" required></div>
     <div class="sheet-actions">
       <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
@@ -410,6 +429,27 @@ function close(){
 document.getElementById('overlay').addEventListener('click',close);
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
 
+document.querySelectorAll('#fornecedorChips .chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('#fornecedorChips .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    let val=chip.dataset.val;
+    let hidden=document.querySelector('#formReceb [name=fornecedor]');
+    let outroWrap=document.getElementById('fornecedorOutroWrap');
+    if(val==='__outro__'){
+      outroWrap.style.display='block';
+      hidden.value=document.getElementById('fornecedorOutroInput').value;
+      document.getElementById('fornecedorOutroInput').focus();
+    }else{
+      outroWrap.style.display='none';
+      hidden.value=val;
+    }
+  });
+});
+document.getElementById('fornecedorOutroInput').addEventListener('input',e=>{
+  document.querySelector('#formReceb [name=fornecedor]').value=e.target.value;
+});
+
 document.getElementById('formTurno').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
@@ -429,6 +469,7 @@ document.getElementById('formTurno').addEventListener('submit',e=>{
 document.getElementById('formReceb').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
+  if(!f.fornecedor.value){alert('Selecione o fornecedor.');return;}
   let entry={
     data:f.data.value,hora:f.hora.value,
     antes:Number(f.antes.value),depois:Number(f.depois.value),
@@ -436,6 +477,9 @@ document.getElementById('formReceb').addEventListener('submit',e=>{
   };
   addEntry(RECEB,entry);
   f.reset();
+  document.querySelectorAll('#fornecedorChips .chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('fornecedorOutroWrap').style.display='none';
+  document.getElementById('fornecedorOutroInput').value='';
   close();
   alert('✅ Recebimento salvo!');
 });

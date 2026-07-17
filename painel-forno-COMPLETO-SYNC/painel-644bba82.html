@@ -116,7 +116,7 @@ const db=firebase.database(app);
 let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia};
 let turnos=[], recebimentos=[];
 let chartLton,chartAreia,chartOleo;
-const FORNECEDORES=["Manoel","Madalena","Walk","Wedeson","Antonio"];
+const FORNECEDORES=["Madalena","José William","Eugênia","Emanuel","Walk"];
 
 function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
 

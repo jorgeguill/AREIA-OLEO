@@ -67,6 +67,10 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
 
 <section>
   <h2>Indicadores gerais</h2>
+  <div class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:12px;color:var(--muted);">📅 Período dos gráficos e indicadores:</span>
+    <select id="mesSel" style="background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Inter';"></select>
+  </div>
   <div class="grid4">
     <div class="stat"><div class="v" id="statTurnos">—</div><div class="l">turnos registrados</div></div>
     <div class="stat"><div class="v" id="statReceb">—</div><div class="l">recebimentos</div></div>
@@ -197,7 +201,28 @@ db.ref('parametros').on('value',snap=>{
 db.ref('turnos').on('value',snap=>{ turnos=snapToList(snap.val()); renderAll(); });
 db.ref('recebimentos').on('value',snap=>{ recebimentos=snapToList(snap.val()); renderAll(); });
 
+// ===== Filtro de mês/ano (afeta gráficos e indicadores; tabelas ficam completas) =====
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let mesFiltro='';
+function mesDe(d){ return (d||'').slice(0,7); }
+function mesLabel(ym){ let p=ym.split('-'); return (MESES[(+p[1])-1]||p[1])+' / '+p[0]; }
+function turnosF(){ return mesFiltro?turnos.filter(t=>mesDe(t.data)===mesFiltro):turnos; }
+function recebF(){ return mesFiltro?recebimentos.filter(r=>mesDe(r.data)===mesFiltro):recebimentos; }
+function fillMesSel(){
+  let set=new Set();
+  turnos.forEach(t=>{ if(t.data)set.add(mesDe(t.data)); });
+  recebimentos.forEach(r=>{ if(r.data)set.add(mesDe(r.data)); });
+  let meses=[...set].filter(Boolean).sort();
+  let sel=document.getElementById('mesSel'); if(!sel)return;
+  let cur=mesFiltro;
+  if(cur===''&&!sel.dataset.init&&meses.length){ cur=meses[meses.length-1]; }
+  sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
+  sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
+}
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); });
+
 function renderAll(){
+  fillMesSel();
   renderStats();
   renderStatus();
   renderCharts();
@@ -220,6 +245,7 @@ function normOp(o){
   return o.charAt(0).toUpperCase()+o.slice(1);
 }
 function renderColab(){
+  const turnos=turnosF();
   let porOp={};
   turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
   let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
@@ -232,6 +258,7 @@ function renderColab(){
 }
 
 function renderStats(){
+  const turnos=turnosF(), recebimentos=recebF();
   document.getElementById('statTurnos').textContent=turnos.length;
   document.getElementById('statReceb').textContent=recebimentos.length;
 
@@ -279,6 +306,7 @@ function renderStatus(){
 }
 
 function renderCharts(){
+  const turnos=turnosF(), recebimentos=recebF();
   let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
   let ltonData=sorted.map(t=>{let c=compute(t);return c.lton?+c.lton.toFixed(2):null;});

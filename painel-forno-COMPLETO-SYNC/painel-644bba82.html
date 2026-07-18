@@ -133,6 +133,7 @@ let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAUL
 let turnos=[], recebimentos=[];
 let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo;
 const FORNECEDORES=["Madalena","José William","Eugênia","Emanuel","Walk"];
+const OPERADORES=["Anailson","Lívio","William","João Victor","Renato","Rafael"];
 
 function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
 
@@ -200,7 +201,19 @@ function renderAll(){
   renderRecebTable();
 }
 
-function normOp(o){ o=(o||'').trim(); if(!o||o==='—')return null; if(/^anailson/i.test(o))return 'Anailson'; return o; }
+function stripAcc(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Normaliza nome do operador: ignora acento/maiúsculas e junta variações (Lívio/lívio/Livio, Anailson/Anaílson/Anailson Costa) num nome só
+function normOp(o){
+  o=(o||'').trim().replace(/\s+/g,' ');
+  if(!o||o==='—')return null;
+  let k=stripAcc(o).toLowerCase(), f=k.split(' ')[0];
+  const M={anailson:'Anailson',livio:'Lívio',william:'William',renato:'Renato',rafael:'Rafael',adriano:'Adriano',rodrigo:'Rodrigo',pedro:'Pedro',emanuel:'Emanuel'};
+  if(M[f])return M[f];
+  if(k.indexOf('joao')===0)return 'João Victor';
+  if(k.indexOf('jose vieira')===0)return 'José Vieira';
+  if(k.indexOf('jose william')===0)return 'José William';
+  return o.charAt(0).toUpperCase()+o.slice(1);
+}
 function renderColab(){
   let porOp={};
   turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
@@ -308,10 +321,18 @@ function editTurno(id){
   let t=turnos.find(x=>x.id===id);
   if(!t)return;
   let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
+  let opCanon=normOp(t.operador); let opIsKnown=OPERADORES.includes(opCanon);
   row.innerHTML=`
     <td><input class="edit" type="date" value="${t.data}" data-f="data"></td>
     <td><input class="edit" value="${t.turno||''}" data-f="turno"></td>
-    <td><input class="edit wide" value="${t.operador||''}" data-f="operador"></td>
+    <td>
+      <div class="chip-group-mini" id="opChips_${id}">
+        ${OPERADORES.map(o=>`<button type="button" class="chip-mini${opIsKnown&&opCanon===o?' active':''}" data-val="${o}">${o}</button>`).join('')}
+        <button type="button" class="chip-mini${opIsKnown?'':' active'}" data-val="__outro__">Outro</button>
+      </div>
+      <input type="hidden" id="opVal_${id}" data-f="operador" value="${opIsKnown?opCanon:(t.operador||'')}">
+      <input class="edit wide" id="opOutro_${id}" placeholder="Nome" style="margin-top:4px;${opIsKnown?'display:none;':''}" value="${opIsKnown?'':(t.operador||'')}">
+    </td>
     <td><input class="edit" value="${t.fornecedor_areia||''}" data-f="fornecedor_areia"></td>
     <td><input class="edit" type="number" step="0.1" value="${t.m3_umida??''}" data-f="m3_umida"></td>
     <td><input class="edit wide" value="${t.silo||''}" data-f="silo"></td>
@@ -322,6 +343,16 @@ function editTurno(id){
     <td><input class="edit wide" value="${(t.obs||'').replace(/"/g,'&quot;')}" data-f="obs"></td>
     <td><button class="btn primary" onclick="saveTurno('${id}')">Salvar</button><button class="btn" onclick="renderTurnosTable()">Cancelar</button></td>
   `;
+  document.querySelectorAll(`#opChips_${id} .chip-mini`).forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      document.querySelectorAll(`#opChips_${id} .chip-mini`).forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      let val=chip.dataset.val, hidden=document.getElementById(`opVal_${id}`), outro=document.getElementById(`opOutro_${id}`);
+      if(val==='__outro__'){ outro.style.display='block'; hidden.value=outro.value; outro.focus(); }
+      else { outro.style.display='none'; hidden.value=val; }
+    });
+  });
+  document.getElementById(`opOutro_${id}`).addEventListener('input',e=>{ document.getElementById(`opVal_${id}`).value=e.target.value; });
 }
 
 function saveTurno(id){

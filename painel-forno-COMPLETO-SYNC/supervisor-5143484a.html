@@ -206,7 +206,19 @@ function renderAll(){
   renderRecebTable();
 }
 
-function normOp(o){ o=(o||'').trim(); if(!o||o==='—')return null; if(/^anailson/i.test(o))return 'Anailson'; return o; }
+function stripAcc(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Normaliza nome do operador: ignora acento/maiúsculas e junta variações (Lívio/lívio/Livio, Anailson/Anaílson/Anailson Costa) num nome só
+function normOp(o){
+  o=(o||'').trim().replace(/\s+/g,' ');
+  if(!o||o==='—')return null;
+  let k=stripAcc(o).toLowerCase(), f=k.split(' ')[0];
+  const M={anailson:'Anailson',livio:'Lívio',william:'William',renato:'Renato',rafael:'Rafael',adriano:'Adriano',rodrigo:'Rodrigo',pedro:'Pedro',emanuel:'Emanuel'};
+  if(M[f])return M[f];
+  if(k.indexOf('joao')===0)return 'João Victor';
+  if(k.indexOf('jose vieira')===0)return 'José Vieira';
+  if(k.indexOf('jose william')===0)return 'José William';
+  return o.charAt(0).toUpperCase()+o.slice(1);
+}
 function renderColab(){
   let porOp={};
   turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });

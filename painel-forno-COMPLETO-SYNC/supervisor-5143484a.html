@@ -103,6 +103,13 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
 </section>
 
 <section>
+  <h2>Desempenho por colaborador</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Areia processada (m³ úmida) por operador</div><div class="chart-wrap"><canvas id="chartColabAreia"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média L/ton por operador (menor = melhor)</div><div class="chart-wrap"><canvas id="chartColabLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Tempo médio de secagem por lote (min) por operador</div><div class="chart-wrap"><canvas id="chartColabTempo"></canvas></div></div>
+</section>
+
+<section>
   <h2>Parâmetros da areia (atuais)</h2>
   <div class="card">
     <div class="params-grid">
@@ -118,7 +125,7 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
   <h2>Histórico completo — Turnos</h2>
   <div class="card tblwrap">
     <table id="tblTurnos">
-      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>m³ úmida</th><th>Silo</th><th>Tanque ini</th><th>Tanque fim</th><th>Óleo receb.</th><th>L/ton</th></tr></thead>
+      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Origem</th><th>m³ úmida</th><th>Silo</th><th>Conchas</th><th>Tempo</th><th>Óleo</th><th>L/ton</th><th>Obs</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -128,7 +135,7 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
   <h2>Histórico completo — Recebimentos</h2>
   <div class="card tblwrap">
     <table id="tblReceb">
-      <thead><tr><th>Data</th><th>Hora</th><th>Antes</th><th>Depois</th><th>Litros</th><th>Fornecedor</th><th>Recebedor</th></tr></thead>
+      <thead><tr><th>Data</th><th>Hora</th><th>Antes</th><th>Depois</th><th>Litros</th><th>R$/L</th><th>Combustão</th><th>Água</th><th>Fornecedor</th><th>Recebedor</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -140,7 +147,7 @@ const app=firebase.initializeApp(DEFAULT_CFG,'supervisorApp');
 const db=firebase.database(app);
 let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3};
 let turnos=[], recebimentos=[];
-let chartLton,chartAreia,chartOleo;
+let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo;
 
 function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
 
@@ -155,20 +162,18 @@ function turnoConchas(t){
   if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0);
   return Number(t.conchas)||0;
 }
+function tonOf(t){ let m3u=Number(t.m3_umida); if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c)m3u=c*conchaM3(); } m3u=m3u||0; return {m3u,ton:m3u*(1-cfg.umidade/100)*cfg.densidade}; }
+function mediaLton(){ let litros=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0); let ton=turnos.reduce((s,t)=>s+tonOf(t).ton,0); return ton>0?litros/ton:0; }
 function compute(t){
-  let m3u=Number(t.m3_umida);
-  if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c) m3u=c*conchaM3(); }
-  m3u=m3u||0;
-  let m3s=m3u*(1-cfg.umidade/100),ton=m3s*cfg.densidade;
-  let oleo=0;
-  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){
-    oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim));
-  }
-  oleo+=Number(t.oleo_receb||0);
-  oleo+=Number(t.oleo_consumido||0);
-  let lton=Number(t.consumo_manual)||null;
-  if(!lton&&oleo>0&&ton>0.01)lton=oleo/ton;
-  return{m3u,m3s,ton,oleo,lton};
+  let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
+  let oleo=0, medido=false;
+  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim)); medido=true; }
+  if(t.oleo_receb){ oleo+=Number(t.oleo_receb); medido=true; }
+  if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
+  let lton=Number(t.consumo_manual)||null, estimado=false;
+  if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
+  else if(!lton&&!medido&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  return{m3u,m3s,ton,oleo,lton,estimado};
 }
 
 function dotClassFor(f){
@@ -191,8 +196,22 @@ function renderAll(){
   renderStats();
   renderStatus();
   renderCharts();
+  renderColab();
   renderTurnosTable();
   renderRecebTable();
+}
+
+function normOp(o){ o=(o||'').trim(); if(!o||o==='—')return null; if(/^anailson/i.test(o))return 'Anailson'; return o; }
+function renderColab(){
+  let porOp={};
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ if(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0){ porOp[op].tempoSum+=Number(l.tempo_min); porOp[op].tempoN++; } }); });
+  let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
+  if(chartColabAreia)chartColabAreia.destroy();
+  chartColabAreia=new Chart(document.getElementById('chartColabAreia'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>+porOp[o].m3.toFixed(1)),backgroundColor:'#E8A33D'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+  if(chartColabLton)chartColabLton.destroy();
+  chartColabLton=new Chart(document.getElementById('chartColabLton'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>porOp[o].ltonN?+(porOp[o].ltonSum/porOp[o].ltonN).toFixed(2):null),backgroundColor:ops.map(o=>{ let v=porOp[o].ltonN?porOp[o].ltonSum/porOp[o].ltonN:0; return v&&v<=cfg.meta?'#4F9D69':(v<=cfg.meta*(1+cfg.tolerancia/100)?'#E8A33D':'#D6534A'); })}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+  if(chartColabTempo)chartColabTempo.destroy();
+  chartColabTempo=new Chart(document.getElementById('chartColabTempo'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>porOp[o].tempoN?+(porOp[o].tempoSum/porOp[o].tempoN).toFixed(0):null),backgroundColor:'#7aa7d9'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
 }
 
 function renderStats(){
@@ -286,25 +305,31 @@ function renderTurnosTable(){
   let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let tbody=document.querySelector('#tblTurnos tbody');
   tbody.innerHTML=sorted.map(t=>{
-    let c=compute(t);
+    let c=compute(t); let nc=turnoConchas(t);
+    let temp=(t.tempo_secagem_min!=null)?t.tempo_secagem_min+'m':'';
+    let oleo=(t.oleo_consumido??t.oleo_receb??'');
     return `<tr>
       <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
-      <td>${t.m3_umida??''}</td><td>${t.silo||''}</td>
-      <td>${t.tanque_ini??''}</td><td>${t.tanque_fim??''}</td><td>${t.oleo_receb??0}</td>
-      <td>${c.lton?c.lton.toFixed(2):'—'}</td>
+      <td>${t.fornecedor_areia||''}</td><td>${c.m3u?c.m3u.toFixed(1):(t.m3_umida??'')}</td><td>${t.silo||''}</td>
+      <td>${nc||''}</td><td>${temp}</td><td>${oleo}</td>
+      <td>${c.lton?(c.estimado?'~':'')+c.lton.toFixed(2):'—'}</td>
+      <td class="obscol" title="${(t.obs||'').replace(/"/g,'&quot;')}">${(t.obs||'').slice(0,24)}${(t.obs||'').length>24?'…':''}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="9" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
 }
 
 function renderRecebTable(){
   let sorted=recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   let tbody=document.querySelector('#tblReceb tbody');
+  let tst=v=>{ if(!v)return ''; return v==='Aprovado'?'<span style="color:var(--good)">✓</span>':'<span style="color:var(--danger)">✗</span>'; };
   tbody.innerHTML=sorted.map(r=>`<tr>
       <td>${formatDate(r.data)}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
       <td>${(Number(r.depois)-Number(r.antes)).toFixed(0)}</td>
+      <td>${r.preco_litro!=null?('R$ '+Number(r.preco_litro).toFixed(2)):''}</td>
+      <td>${tst(r.teste_combustao)}</td><td>${tst(r.teste_agua)}</td>
       <td><span class="chip-forn"><span class="dot ${dotClassFor(r.fornecedor)}"></span>${r.fornecedor||''}</span></td>
       <td>${r.recebedor||''}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="10" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
 }
 </script>
 </body>

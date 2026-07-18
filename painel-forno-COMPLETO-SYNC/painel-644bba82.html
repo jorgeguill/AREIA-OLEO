@@ -66,6 +66,26 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 </section>
 
 <section>
+  <h2>Custo do óleo</h2>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="custoTon">—</div><div class="l">R$ / ton seca</div></div>
+    <div class="stat"><div class="v" id="custoPeriodo">—</div><div class="l">custo de óleo no período</div></div>
+    <div class="stat"><div class="v" id="custoM3">—</div><div class="l">R$ / m³ úmida</div></div>
+    <div class="stat"><div class="v" id="custoPreco">—</div><div class="l">preço médio do litro</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Abastecimento de óleo</h2>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="oleoUltimo">—</div><div class="l">último recebimento</div></div>
+    <div class="stat"><div class="v" id="oleoDias">—</div><div class="l">tempo desde o último</div></div>
+    <div class="stat"><div class="v" id="oleoInterv">—</div><div class="l">intervalo médio entre recebimentos</div></div>
+  </div>
+  <div id="oleoAlerta" style="display:none;margin-top:10px;background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.4);color:var(--amber);padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.5;"></div>
+</section>
+
+<section>
   <h2>Consumo L/ton por turno</h2>
   <div class="card"><div class="chart-wrap"><canvas id="chartLton"></canvas></div></div>
 </section>
@@ -85,6 +105,11 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Areia processada (m³ úmida) por operador</div><div class="chart-wrap"><canvas id="chartColabAreia"></canvas></div></div>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média L/ton por operador (menor = melhor)</div><div class="chart-wrap"><canvas id="chartColabLton"></canvas></div></div>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Tempo médio de secagem por lote (min) por operador</div><div class="chart-wrap"><canvas id="chartColabTempo"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Paradas / problemas mais citados</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Baseado nas observações dos turnos — um turno pode citar mais de um problema</div><div class="chart-wrap"><canvas id="chartParadas"></canvas></div></div>
 </section>
 
 <section>
@@ -135,7 +160,7 @@ const app=firebase.initializeApp(DEFAULT_CFG,'adminApp');
 const db=firebase.database(app);
 let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3};
 let turnos=[], recebimentos=[];
-let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo;
+let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo,chartParadas;
 const FORNECEDORES=["Madalena","José William","Eugênia","Emanuel","Walk"];
 const OPERADORES=["Anailson","Lívio","William","João Victor","Renato","Rafael"];
 
@@ -215,15 +240,68 @@ function fillMesSel(){
   sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
   sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
 }
-document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); });
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); });
 
 function renderAll(){
   fillMesSel();
   renderStats();
+  renderCusto();
+  renderOleoSupply();
   renderCharts();
   renderColab();
+  renderParadas();
   renderTurnosTable();
   renderRecebTable();
+}
+function _set(id,v){ let e=document.getElementById(id); if(e)e.textContent=v; }
+function brl(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function brl0(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
+// Preço médio do litro (ponderado pelos litros recebidos); cai para 2,50 se não houver preço
+function precoMedio(){ let s=0,l=0; recebimentos.forEach(r=>{ let p=Number(r.preco_litro), q=Number(r.depois)-Number(r.antes); if(isFinite(p)&&p>0&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:2.5; }
+// Custo do óleo consumido / produção (usa mês filtrado)
+function renderCusto(){
+  const turnos=turnosF(); let pm=precoMedio(); let ton=0,m3=0,oleo=0;
+  turnos.forEach(t=>{ let c=compute(t); ton+=c.ton||0; m3+=c.m3u||0; oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  let custo=oleo*pm;
+  _set('custoPreco',brl(pm));
+  _set('custoPeriodo',custo>0?brl0(custo):'—');
+  _set('custoTon',ton>0?brl(custo/ton):'—');
+  _set('custoM3',m3>0?brl(custo/m3):'—');
+}
+// Cadência de abastecimento (all-time; alerta se está demorando mais que a média)
+function renderOleoSupply(){
+  let rs=recebimentos.filter(r=>r.data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let al=document.getElementById('oleoAlerta');
+  if(!rs.length){ _set('oleoUltimo','—'); _set('oleoDias','—'); _set('oleoInterv','—'); if(al)al.style.display='none'; return; }
+  let last=rs[rs.length-1];
+  let litUlt=(Number(last.depois)-Number(last.antes))||0;
+  let dLast=Math.max(0,Math.floor((Date.now()-new Date(last.data+'T12:00:00').getTime())/86400000));
+  let gaps=[]; for(let i=1;i<rs.length;i++){ gaps.push((new Date(rs[i].data)-new Date(rs[i-1].data))/86400000); }
+  let interv=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
+  _set('oleoUltimo',formatDate(last.data)+' · '+litUlt+' L');
+  _set('oleoDias',dLast+' dia'+(dLast===1?'':'s'));
+  _set('oleoInterv',interv!=null?('~'+interv.toFixed(0)+' dias'):'—');
+  if(al){ if(interv!=null&&dLast>Math.ceil(interv)){ al.style.display='block'; al.textContent='⚠️ Faz '+dLast+' dias desde o último recebimento de óleo (a média é ~'+interv.toFixed(0)+' dias). Pode estar na hora de pedir.'; } else { al.style.display='none'; } }
+}
+// Categorias de parada extraídas do texto das observações
+const CAT_PARADAS=[
+  {nome:'Elevador / rosca',re:/elevad|rosca|mancal|rolament/i},
+  {nome:'Correia / transmissão',re:/correia|cinta|redutor|transmiss/i},
+  {nome:'Caldeira / forno / bico',re:/caldeir|forno|fornalh|\bbico|carv[ãa]o|pi[ãa]o|senta/i},
+  {nome:'Peneira',re:/peneir/i},
+  {nome:'Reco-reco / betoneira',re:/reco.?reco|betoneir/i},
+  {nome:'Falta de óleo',re:/acabou o [óo]leo|[óo]leo acabou|falta.*[óo]leo|sem [óo]leo|problema no [óo]leo/i},
+];
+function renderParadas(){
+  const turnos=turnosF();
+  let cont={}; CAT_PARADAS.forEach(c=>cont[c.nome]=0); let outros=0;
+  turnos.forEach(t=>{ let o=(t.obs||'').trim(); if(!o)return; let hit=false; CAT_PARADAS.forEach(c=>{ if(c.re.test(o)){ cont[c.nome]++; hit=true; } }); if(!hit)outros++; });
+  let pairs=CAT_PARADAS.map(c=>[c.nome,cont[c.nome]]); if(outros>0)pairs.push(['Outros',outros]);
+  pairs=pairs.filter(p=>p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if(chartParadas)chartParadas.destroy();
+  chartParadas=new Chart(document.getElementById('chartParadas'),{type:'bar',
+    data:{labels:pairs.map(p=>p[0]),datasets:[{data:pairs.map(p=>p[1]),backgroundColor:'#D6534A'}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',precision:0}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
 }
 
 function stripAcc(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }

@@ -41,6 +41,8 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 .chip-group-mini{display:flex;flex-wrap:wrap;gap:4px;max-width:220px;}
 .chip-mini{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer;font-family:'Inter';white-space:nowrap;}
 .chip-mini.active{background:var(--rust);border-color:var(--rust);color:#fff;}
+.chip-mini.tst-ok.active{background:var(--good);border-color:var(--good);color:#fff;}
+.chip-mini.tst-no.active{background:var(--danger);border-color:var(--danger);color:#fff;}
 </style>
 </head>
 <body>
@@ -345,8 +347,20 @@ function editReceb(id){
     <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
     <td>—</td>
     <td><input class="edit" type="number" step="0.01" value="${r.preco_litro??''}" data-f="preco_litro"></td>
-    <td><input class="edit" value="${r.teste_combustao||''}" placeholder="Aprov/Reprov" data-f="teste_combustao"></td>
-    <td><input class="edit" value="${r.teste_agua||''}" placeholder="Aprov/Reprov" data-f="teste_agua"></td>
+    <td>
+      <div class="chip-group-mini" data-testgroup="teste_combustao">
+        <button type="button" class="chip-mini tst-ok${r.teste_combustao==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
+        <button type="button" class="chip-mini tst-no${r.teste_combustao==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
+      </div>
+      <input type="hidden" data-f="teste_combustao" value="${r.teste_combustao||''}">
+    </td>
+    <td>
+      <div class="chip-group-mini" data-testgroup="teste_agua">
+        <button type="button" class="chip-mini tst-ok${r.teste_agua==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
+        <button type="button" class="chip-mini tst-no${r.teste_agua==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
+      </div>
+      <input type="hidden" data-f="teste_agua" value="${r.teste_agua||''}">
+    </td>
     <td>
       <div class="chip-group-mini" id="fornChips_${id}">
         ${FORNECEDORES.map(f=>`<button type="button" class="chip-mini${r.fornecedor===f?' active':''}" data-val="${f}">${f}</button>`).join('')}
@@ -377,6 +391,17 @@ function editReceb(id){
   });
   document.getElementById(`fornOutro_${id}`).addEventListener('input',e=>{
     document.getElementById(`fornVal_${id}`).value=e.target.value;
+  });
+  row.querySelectorAll('[data-testgroup]').forEach(g=>{
+    let hid=g.parentElement.querySelector(`input[data-f="${g.dataset.testgroup}"]`);
+    g.querySelectorAll('.chip-mini').forEach(chip=>{
+      chip.addEventListener('click',()=>{
+        let already=chip.classList.contains('active');
+        g.querySelectorAll('.chip-mini').forEach(c=>c.classList.remove('active'));
+        if(already){ hid.value=''; }
+        else { chip.classList.add('active'); hid.value=chip.dataset.val; }
+      });
+    });
   });
 }
 

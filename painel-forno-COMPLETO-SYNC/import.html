@@ -23,6 +23,8 @@ button:disabled{opacity:0.5;}
 <p style="color:#4F9D69;"><b>✅ Seguro contra duplicidade:</b> antes de gravar, a página lê os recebimentos já cadastrados e <b>pula</b> os que já existem (mesma <b>data + hora + fornecedor</b>). Rodar de novo não duplica.</p>
 <table id="tbl"></table>
 <button id="btnImport">Importar 18 registros</button>
+<p style="color:#4F9D69;margin-top:22px;"><b>Preencher testes e preço em branco:</b> marca <b>Combustão = Aprovado</b>, <b>Água = Aprovado</b> e <b>R$ 2,50/L</b> em todos os recebimentos que estão sem esses dados. Só preenche o que está <b>vazio</b> — não altera nada que você já marcou (ex.: um Reprovado). Pode rodar de novo sem problema.</p>
+<button id="btnFill" style="background:#4F9D69;">Preencher em branco (Aprovado · R$ 2,50)</button>
 <div id="log"></div>
 
 <script>
@@ -103,6 +105,36 @@ document.getElementById('btnImport').addEventListener('click', async ()=>{
   }
   log.textContent+=`\nConcluído: ${ok} importados, ${skip} já existiam (pulados), ${fail} falharam.`;
   btn.textContent='Importação concluída';
+});
+
+function vazio(v){ return v===undefined||v===null||v===''; }
+document.getElementById('btnFill').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btnFill');
+  const log=document.getElementById('log');
+  btn.disabled=true; btn.textContent='Preenchendo…';
+  log.textContent='Lendo recebimentos...\n';
+  let snap;
+  try{ snap=await db.ref('recebimentos').once('value'); }
+  catch(e){ log.textContent+=`❌ Falha ao ler: ${e.message}`; btn.textContent='Erro — tente de novo'; btn.disabled=false; return; }
+  let upd=0, jaok=0, fail=0, total=0;
+  const tarefas=[];
+  snap.forEach(ch=>{
+    total++;
+    const v=ch.val()||{};
+    const up={};
+    if(vazio(v.teste_combustao)) up.teste_combustao='Aprovado';
+    if(vazio(v.teste_agua)) up.teste_agua='Aprovado';
+    if(vazio(v.preco_litro)) up.preco_litro=2.5;
+    if(Object.keys(up).length===0){ jaok++; return; }
+    tarefas.push({id:ch.key, up, info:`${v.data||''} ${v.hora||''} ${v.fornecedor||''}`});
+  });
+  log.textContent+=`${total} recebimento(s). ${tarefas.length} para preencher, ${jaok} já completos.\n\n`;
+  for(const t of tarefas){
+    try{ await db.ref('recebimentos/'+t.id).update(t.up); upd++; log.textContent+=`✅ ${t.info} — ${Object.keys(t.up).join(', ')}\n`; }
+    catch(e){ fail++; log.textContent+=`❌ ${t.info}: ${e.message}\n`; }
+  }
+  log.textContent+=`\nConcluído: ${upd} preenchidos, ${jaok} já estavam completos, ${fail} falharam.`;
+  btn.textContent='Preenchimento concluído';
 });
 </script>
 </body>

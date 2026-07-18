@@ -163,6 +163,11 @@ function turnoConchas(t){
   return Number(t.conchas)||0;
 }
 function tonOf(t){ let m3u=Number(t.m3_umida); if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c)m3u=c*conchaM3(); } m3u=m3u||0; return {m3u,ton:m3u*(1-cfg.umidade/100)*cfg.densidade}; }
+// Tempo de secagem de um lote: minutos entre início e fim (vira o dia se passar da meia-noite)
+function tempoMinLote(ini,fim){ if(!ini||!fim)return null; let a=String(ini).split(':').map(Number),b=String(fim).split(':').map(Number); if(a.length<2||b.length<2||a.some(isNaN)||b.some(isNaN))return null; let d=(b[0]*60+b[1])-(a[0]*60+a[1]); if(d<0)d+=1440; return d; }
+// Tempo de secagem do turno: soma automática dos lotes (por tempo_min ou calculado do início/fim); cai para o total salvo
+function tempoTurno(t){ let lotes=Array.isArray(t.lotes)?t.lotes:[]; let sum=0,has=false; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ sum+=m; has=true; } }); if(has)return sum; if(t.tempo_secagem_min!=null&&isFinite(t.tempo_secagem_min)&&Number(t.tempo_secagem_min)>0)return Number(t.tempo_secagem_min); return null; }
+function tempoFmt(min){ if(min==null||isNaN(min))return ''; let h=Math.floor(min/60),m=min%60; return h?`${h}h${m?(' '+m+'m'):''}`:`${m}m`; }
 function mediaLton(){ let litros=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0); let ton=turnos.reduce((s,t)=>s+tonOf(t).ton,0); return ton>0?litros/ton:0; }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
@@ -204,7 +209,7 @@ function renderAll(){
 function normOp(o){ o=(o||'').trim(); if(!o||o==='—')return null; if(/^anailson/i.test(o))return 'Anailson'; return o; }
 function renderColab(){
   let porOp={};
-  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ if(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0){ porOp[op].tempoSum+=Number(l.tempo_min); porOp[op].tempoN++; } }); });
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
   let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
   if(chartColabAreia)chartColabAreia.destroy();
   chartColabAreia=new Chart(document.getElementById('chartColabAreia'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>+porOp[o].m3.toFixed(1)),backgroundColor:'#E8A33D'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
@@ -306,7 +311,7 @@ function renderTurnosTable(){
   let tbody=document.querySelector('#tblTurnos tbody');
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t); let nc=turnoConchas(t);
-    let temp=(t.tempo_secagem_min!=null)?t.tempo_secagem_min+'m':'';
+    let temp=tempoFmt(tempoTurno(t));
     let oleo=(t.oleo_consumido??t.oleo_receb??'');
     return `<tr>
       <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>

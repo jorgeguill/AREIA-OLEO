@@ -113,6 +113,32 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 </section>
 
 <section>
+  <h2>Produtividade e comparativos</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Produtividade — ton seca por hora de secagem, por operador (maior = melhor)</div><div class="chart-wrap"><canvas id="chartProd"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por origem da areia (menor = melhor)</div><div class="chart-wrap"><canvas id="chartOrigem"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por turno (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTurno"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Tendência mês a mês</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média de L/ton por mês (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTendLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Custo R$/ton por mês</div><div class="chart-wrap"><canvas id="chartTendCusto"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Relatório e dados</h2>
+  <div class="card">
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">Exporta o período do filtro acima (ou "Todos os meses") em CSV — abre no Excel/Google Planilhas.</div>
+    <button class="btn primary" onclick="exportTurnos()">⬇ Exportar turnos (CSV)</button>
+    <button class="btn" onclick="exportReceb()">⬇ Exportar recebimentos (CSV)</button>
+    <div style="height:12px;"></div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">Reescreve o campo operador dos turnos já gravados usando o nome padronizado (ex.: Anaílson → Anailson, lívio → Lívio).</div>
+    <button class="btn" style="border-color:rgba(232,163,61,.45);color:var(--amber);" onclick="padronizarNomes()">✎ Padronizar nomes de operador</button>
+    <div id="padMsg" style="font-size:12px;color:var(--good);margin-top:8px;"></div>
+  </div>
+</section>
+
+<section>
   <h2>Parâmetros da areia</h2>
   <div class="card">
     <form id="formCfg">
@@ -240,7 +266,7 @@ function fillMesSel(){
   sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
   sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
 }
-document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); });
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
 
 function renderAll(){
   fillMesSel();
@@ -250,8 +276,38 @@ function renderAll(){
   renderCharts();
   renderColab();
   renderParadas();
+  renderComparativos();
+  renderTendencia();
   renderTurnosTable();
   renderRecebTable();
+}
+let _charts={};
+function drawBar(cid,labels,data,color,horiz){ let el=document.getElementById(cid); if(!el)return; if(_charts[cid])_charts[cid].destroy(); _charts[cid]=new Chart(el,{type:'bar',data:{labels,datasets:[{data,backgroundColor:color}]},options:{indexAxis:(horiz===false)?'x':'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}}); }
+// Produtividade (ton/h) por operador + comparativos por origem e turno (respeitam o filtro de mês)
+function renderComparativos(){
+  const turnos=turnosF();
+  let po={};
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); let horas=0; (Array.isArray(t.lotes)?t.lotes:[]).forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m>0)horas+=m/60; }); if(!po[op])po[op]={ton:0,h:0}; po[op].ton+=c.ton||0; po[op].h+=horas; });
+  let ops=Object.keys(po).filter(o=>po[o].h>0).sort((a,b)=>(po[b].ton/po[b].h)-(po[a].ton/po[a].h));
+  drawBar('chartProd',ops,ops.map(o=>+(po[o].ton/po[o].h).toFixed(2)),'#8ac6a0');
+  let orig={};
+  turnos.forEach(t=>{ let o=((t.fornecedor_areia||'').trim())||'—'; let c=compute(t); if(!orig[o])orig[o]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){orig[o].s+=c.lton;orig[o].n++;} });
+  let ok=Object.keys(orig).filter(o=>orig[o].n>0).sort((a,b)=>(orig[a].s/orig[a].n)-(orig[b].s/orig[b].n));
+  drawBar('chartOrigem',ok,ok.map(o=>+(orig[o].s/orig[o].n).toFixed(2)),'#E8A33D');
+  let TUR=['Manhã','Tarde','Noite'], tt={};
+  turnos.forEach(t=>{ let tu=(t.turno||'—'); let c=compute(t); if(!tt[tu])tt[tu]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){tt[tu].s+=c.lton;tt[tu].n++;} });
+  let tk=TUR.filter(x=>tt[x]&&tt[x].n>0).concat(Object.keys(tt).filter(x=>TUR.indexOf(x)<0&&tt[x].n>0));
+  drawBar('chartTurno',tk,tk.map(x=>+(tt[x].s/tt[x].n).toFixed(2)),'#7aa7d9');
+}
+// Tendência mês a mês (usa todos os meses, ignora o filtro)
+function renderTendencia(){
+  let pm=precoMedio(), byM={};
+  turnos.forEach(t=>{ let m=mesDe(t.data); if(!m)return; let c=compute(t); if(!byM[m])byM[m]={s:0,n:0,ton:0,oleo:0}; if(c.lton&&isFinite(c.lton)){byM[m].s+=c.lton;byM[m].n++;} byM[m].ton+=c.ton||0; byM[m].oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  let ms=Object.keys(byM).sort(), labels=ms.map(mesLabel);
+  if(_charts.chartTendLton)_charts.chartTendLton.destroy();
+  _charts.chartTendLton=new Chart(document.getElementById('chartTendLton'),{type:'line',data:{labels,datasets:[{label:'L/ton',data:ms.map(m=>byM[m].n?+(byM[m].s/byM[m].n).toFixed(2):null),borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},{label:'Meta',data:ms.map(()=>cfg.meta),borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
+  if(_charts.chartTendCusto)_charts.chartTendCusto.destroy();
+  _charts.chartTendCusto=new Chart(document.getElementById('chartTendCusto'),{type:'bar',data:{labels,datasets:[{data:ms.map(m=>byM[m].ton>0?+((byM[m].oleo*pm)/byM[m].ton).toFixed(2):null),backgroundColor:'#4F9D69'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
 }
 function _set(id,v){ let e=document.getElementById(id); if(e)e.textContent=v; }
 function brl(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -381,6 +437,30 @@ function renderCharts(){
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}
   });
+}
+
+// ===== Relatório (CSV) e padronização de nomes =====
+function csvEsc(v){ v=(v==null?'':String(v)); return /[",;\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }
+function toCSV(rows){ return rows.map(r=>r.map(csvEsc).join(';')).join('\n'); }
+function baixarCSV(nome,rows){ let blob=new Blob(['﻿'+toCSV(rows)],{type:'text/csv;charset=utf-8;'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); a.remove(); }
+function exportTurnos(){
+  let pm=precoMedio();
+  let rows=[['Data','Turno','Operador','Origem','m3_umida','ton_seca','Silo','Conchas','Tempo_min','Oleo_L','L_ton','Custo_oleo_R$','Obs']];
+  turnosF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),(isFinite(c.oleo)?c.oleo.toFixed(0):''),(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
+  baixarCSV('turnos_'+(mesFiltro||'todos')+'.csv',rows);
+}
+function exportReceb(){
+  let rows=[['Data','Hora','Fornecedor','Litros','Preco_litro_R$','Total_R$','Combustao','Agua','Recebedor']];
+  recebF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(r=>{ let lit=(Number(r.depois)-Number(r.antes))||0,p=Number(r.preco_litro); rows.push([r.data,r.hora||'',r.fornecedor||'',lit,(isFinite(p)?p.toFixed(2):''),(isFinite(p)?(p*lit).toFixed(2):''),r.teste_combustao||'',r.teste_agua||'',r.recebedor||'']); });
+  baixarCSV('recebimentos_'+(mesFiltro||'todos')+'.csv',rows);
+}
+async function padronizarNomes(){
+  let alvo=turnos.filter(t=>{ let cn=normOp(t.operador); return cn&&cn!==t.operador; });
+  if(!alvo.length){ document.getElementById('padMsg').textContent='Nada a padronizar — todos já estão no padrão.'; return; }
+  if(!confirm('Padronizar '+alvo.length+' nome(s) de operador já gravados? Ex.: Anaílson → Anailson, lívio → Lívio.'))return;
+  let n=0;
+  for(const t of alvo){ try{ await db.ref('turnos/'+t.id).update({operador:normOp(t.operador)}); n++; }catch(e){} }
+  document.getElementById('padMsg').textContent='✅ '+n+' nome(s) padronizados.';
 }
 
 function renderTurnosTable(){

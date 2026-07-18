@@ -312,7 +312,10 @@ function renderTurnosTable(){
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t); let nc=turnoConchas(t);
     let temp=tempoFmt(tempoTurno(t));
-    let oleo=(t.oleo_consumido??t.oleo_receb??'');
+    let oleo=(t.oleo_consumido!=null&&t.oleo_consumido!=='')?Number(t.oleo_consumido).toFixed(0)
+      :(t.oleo_receb!=null&&t.oleo_receb!=='')?Number(t.oleo_receb).toFixed(0)
+      :(c.estimado&&isFinite(c.oleo)&&c.oleo>0)?'~'+c.oleo.toFixed(0)
+      :'';
     return `<tr>
       <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
       <td>${t.fornecedor_areia||''}</td><td>${c.m3u?c.m3u.toFixed(1):(t.m3_umida??'')}</td><td>${t.silo||''}</td>

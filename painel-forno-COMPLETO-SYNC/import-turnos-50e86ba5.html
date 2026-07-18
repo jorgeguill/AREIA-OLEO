@@ -50,7 +50,7 @@ a.back{color:var(--amber);font-size:12px;text-decoration:none;}
   • Cada registro importado recebe a marca <code>origem: "historico-planilha"</code> para diferenciar de lançamentos feitos pelos operadores no app.
 </div>
 <div class="alert danger">
-  <b>⚠️ Atenção — possível duplicidade:</b> os operadores já podem ter lançado turnos de 16/07 e 17/07 direto pelo app (que está em uso). Confira a lista abaixo antes de importar para não duplicar os últimos dias.
+  <b>✅ Importação segura contra duplicidade:</b> antes de gravar, esta página lê os turnos já cadastrados e <b>pula</b> qualquer <b>data + turno</b> que já exista (lançado pelo app ou já importado antes). Pode clicar sem medo — rodar de novo não duplica.
 </div>
 
 <div class="stat-row">
@@ -94,15 +94,42 @@ const firebaseConfig = {apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databas
 const app = firebase.initializeApp(firebaseConfig, 'importTurnosApp');
 const db = firebase.database(app);
 
+// Chave única de um turno: data + turno (um turno por dia/período)
+function chaveTurno(v){ return `${(v.data||'').trim()}|${(v.turno||'').trim()}`; }
+
 document.getElementById('btnImport').addEventListener('click', async () => {
   const btn = document.getElementById('btnImport');
   const log = document.getElementById('log');
   btn.disabled = true;
+  btn.textContent = 'Verificando existentes…';
+  log.textContent = 'Lendo turnos já cadastrados para não duplicar...\n';
+
+  // 1) Índice do que já existe (data|turno), venha do app ou de importação anterior
+  const existentes = new Set();
+  try {
+    const snap = await db.ref('turnos').once('value');
+    snap.forEach(ch => { const v = ch.val() || {}; if (v.data && v.turno) existentes.add(chaveTurno(v)); });
+  } catch (e) {
+    log.textContent += `❌ Não consegui ler os turnos existentes: ${e.message}\nAbortado para não arriscar duplicar. Tente de novo.`;
+    btn.textContent = 'Erro — tente de novo';
+    btn.disabled = false;
+    return;
+  }
+  log.textContent += `${existentes.size} turno(s) já no sistema.\n\n`;
   btn.textContent = 'Importando…';
-  log.textContent = 'Importando turnos...\n';
-  let ok = 0, fail = 0;
+
+  // 2) Só grava o que ainda não existe
+  let ok = 0, fail = 0, skip = 0;
   for (let i = 0; i < DADOS.length; i++) {
     const t = DADOS[i];
+    const row = document.getElementById(`row-${i}`);
+    const key = chaveTurno(t);
+    if (existentes.has(key)) {
+      skip++;
+      if (row) row.classList.add('done');
+      log.textContent += `⏭️ ${formatDate(t.data)} ${t.turno} — já existe, pulado\n`;
+      continue;
+    }
     const entry = {
       data: t.data,
       turno: t.turno,
@@ -118,17 +145,18 @@ document.getElementById('btnImport').addEventListener('click', async () => {
     if (t.obs) entry.obs = t.obs;
     try {
       await db.ref('turnos').push(entry);
+      existentes.add(key);
       ok++;
-      document.getElementById(`row-${i}`).classList.add('done');
+      if (row) row.classList.add('done');
       log.textContent += `✅ ${formatDate(t.data)} ${t.turno} — ${t.m3_umida.toFixed(1)} m³\n`;
     } catch (e) {
       fail++;
-      document.getElementById(`row-${i}`).classList.add('err');
+      if (row) row.classList.add('err');
       log.textContent += `❌ ${formatDate(t.data)} ${t.turno}: ${e.message}\n`;
     }
     document.getElementById('statDone').textContent = ok;
   }
-  log.textContent += `\nConcluído: ${ok} importados, ${fail} falharam.`;
+  log.textContent += `\nConcluído: ${ok} importados, ${skip} já existiam (pulados), ${fail} falharam.`;
   btn.textContent = 'Importação concluída';
 });
 </script>

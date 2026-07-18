@@ -19,7 +19,8 @@ button:disabled{opacity:0.5;}
 </head>
 <body>
 <h1>Importar recebimentos de óleo (histórico do caderno)</h1>
-<p>Isso vai gravar <b>18 registros</b> de recebimento de óleo direto no Firebase compartilhado. Confira a tabela antes de clicar em importar. Linhas marcadas com <span class="warn">⚠️</span> têm horário aproximado — confira depois se quiser corrigir.</p>
+<p>Isso vai gravar até <b>18 registros</b> de recebimento de óleo no Firebase compartilhado. Confira a tabela antes de clicar em importar. Linhas marcadas com <span class="warn">⚠️</span> têm horário aproximado — confira depois se quiser corrigir.</p>
+<p style="color:#4F9D69;"><b>✅ Seguro contra duplicidade:</b> antes de gravar, a página lê os recebimentos já cadastrados e <b>pula</b> os que já existem (mesma <b>data + hora + fornecedor</b>). Rodar de novo não duplica.</p>
 <table id="tbl"></table>
 <button id="btnImport">Importar 18 registros</button>
 <div id="log"></div>
@@ -54,20 +55,45 @@ const firebaseConfig={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseU
 const app=firebase.initializeApp(firebaseConfig,'importApp');
 const db=firebase.database(app);
 
+// Chave única de um recebimento: data + hora + fornecedor
+function chaveReceb(v){ return `${(v.data||'').trim()}|${(v.hora||'').trim()}|${(v.fornecedor||'').trim()}`; }
+
 document.getElementById('btnImport').addEventListener('click', async ()=>{
   const btn=document.getElementById('btnImport');
   const log=document.getElementById('log');
   btn.disabled=true;
-  log.textContent='Importando...\n';
-  let ok=0, fail=0;
+  btn.textContent='Verificando existentes…';
+  log.textContent='Lendo recebimentos já cadastrados para não duplicar...\n';
+
+  const existentes=new Set();
+  try{
+    const snap=await db.ref('recebimentos').once('value');
+    snap.forEach(ch=>{ const v=ch.val()||{}; if(v.data&&v.hora) existentes.add(chaveReceb(v)); });
+  }catch(e){
+    log.textContent+=`❌ Não consegui ler os recebimentos existentes: ${e.message}\nAbortado para não arriscar duplicar. Tente de novo.`;
+    btn.textContent='Erro — tente de novo';
+    btn.disabled=false;
+    return;
+  }
+  log.textContent+=`${existentes.size} recebimento(s) já no sistema.\n\n`;
+  btn.textContent='Importando…';
+
+  let ok=0, fail=0, skip=0;
   for(const d of DATA){
     const entry={
       data:d.data, hora:d.hora,
       antes:0, depois:d.litros,
       fornecedor:d.fornecedor, recebedor:"Guilherme"
     };
+    const key=chaveReceb(entry);
+    if(existentes.has(key)){
+      skip++;
+      log.textContent+=`⏭️ ${d.data} ${d.hora} ${d.fornecedor} — já existe, pulado\n`;
+      continue;
+    }
     try{
       await db.ref('recebimentos').push(entry);
+      existentes.add(key);
       ok++;
       log.textContent+=`✅ ${d.data} ${d.fornecedor} ${d.litros}L\n`;
     }catch(e){
@@ -75,7 +101,7 @@ document.getElementById('btnImport').addEventListener('click', async ()=>{
       log.textContent+=`❌ ${d.data} ${d.fornecedor}: ${e.message}\n`;
     }
   }
-  log.textContent+=`\nConcluído: ${ok} importados, ${fail} falharam.`;
+  log.textContent+=`\nConcluído: ${ok} importados, ${skip} já existiam (pulados), ${fail} falharam.`;
   btn.textContent='Importação concluída';
 });
 </script>

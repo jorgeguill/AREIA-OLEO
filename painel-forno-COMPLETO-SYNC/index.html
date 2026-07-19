@@ -34,6 +34,10 @@ main{max-width:540px;margin:0 auto;padding:16px;}
 .gauge-unit{font-size:10px;color:var(--muted);margin-top:4px;}
 .gauge-needle{position:absolute;left:50%;top:50%;width:3px;height:70px;background:linear-gradient(180deg, var(--ink), transparent 92%);transform-origin:50% 100%;border-radius:3px;}
 .gauge-hub{position:absolute;left:50%;top:50%;width:10px;height:10px;background:var(--rust);border-radius:50%;transform:translate(-50%,-50%);z-index:3;}
+.gauge-legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:4px;}
+.gauge-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.gauge-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.gauge-ctx{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;}
 section{margin-top:22px;}
 .sec-title{font-family:'Oswald';font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);margin-bottom:10px;}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
@@ -117,6 +121,12 @@ section{margin-top:22px;}
         <div class="gauge-unit">L/TON</div>
       </div>
     </div>
+    <div class="gauge-legend">
+      <span><i style="background:var(--good)"></i>Dentro da meta</span>
+      <span><i style="background:var(--amber)"></i>Atenção</span>
+      <span><i style="background:var(--danger)"></i>Acima do limite</span>
+    </div>
+    <div class="gauge-ctx" id="gaugeCtx"></div>
   </div>
   <section>
     <div class="sec-title">Resumo</div>
@@ -246,7 +256,7 @@ function compute(t){
   if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&!medido&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  else if(!lton&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
   return{m3u,m3s,ton,oleo,lton,estimado};
 }
 
@@ -262,12 +272,17 @@ function render(){
   turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
   let c=last?compute(last):{lton:null};
   let meta=state.cfg.meta||8,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
-  let scaleMax=Math.max(meta*2.5,limite*1.2,(c.lton||0)*1.1);
+  // valor do medidor: último turno; se vier vazio, cai para a média geral (nunca fica em branco havendo dados)
+  let gv=c.lton, gEst=c.estimado;
+  if(gv==null){ let m=mediaLton(); if(m>0){ gv=m; gEst=true; } }
+  let scaleMax=Math.max(meta*2.5,limite*1.2,(gv||0)*1.1);
   let goodDeg=Math.min(270,(meta/scaleMax)*270), amberDeg=Math.min(270,(limite/scaleMax)*270);
   document.getElementById('gaugeTrack').style.background=`conic-gradient(from -135deg, var(--good) 0deg ${goodDeg}deg, var(--amber) ${goodDeg}deg ${amberDeg}deg, var(--danger) ${amberDeg}deg 270deg)`;
-  document.getElementById('gaugeVal').textContent=c.lton?(c.estimado?'~':'')+c.lton.toFixed(2):'—';
-  let angle=c.lton?-135+Math.min(270,(c.lton/scaleMax)*270):0;
+  document.getElementById('gaugeVal').textContent=gv!=null?(gEst?'~':'')+gv.toFixed(2):'—';
+  let angle=gv!=null?-135+Math.min(270,(gv/scaleMax)*270):-135;
   document.getElementById('needle').style.transform=`translate(-50%,-100%) rotate(${angle}deg)`;
+  let ctx=document.getElementById('gaugeCtx');
+  if(ctx){ if(gv==null){ ctx.textContent=`Meta ${meta} L/ton — sem dados ainda`; } else { ctx.textContent=`Meta ${meta} · limite ${limite.toFixed(1)} L/ton`+(last?` — último: ${last.turno||''} (${last.operador||'—'})`:'')+(gEst?' · estimado':''); } }
   document.getElementById('totalUmida').textContent=totU.toFixed(1);
   document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);

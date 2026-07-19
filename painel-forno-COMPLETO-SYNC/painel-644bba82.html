@@ -218,7 +218,7 @@ function compute(t){
   if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&!medido&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  else if(!lton&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
   return{m3u,m3s,ton,oleo,lton,estimado};
 }
 

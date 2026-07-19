@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Painel do Forno — estilos do módulo
+   Tudo escopado sob .pf-app para não colidir com o CSS do SIGA (host).
+   ========================================================================== */
+
+.pf-app{
+  --bg:#12151A; --panel:#1B1F25; --panel2:#232830; --line:#333A43;
+  --ink:#EDEAE4; --muted:#8D96A1; --rust:#C1571F; --amber:#E8A33D;
+  --good:#4F9D69; --danger:#D6534A;
+  position:relative;
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  padding-bottom:100px;
+  background:radial-gradient(ellipse at top, #1a1f26 0%, var(--bg) 55%);
+}
+.pf-app *{box-sizing:border-box;}
+.pf-app .mono{font-family:'IBM Plex Mono',monospace;}
+
+.pf-app header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg, #14181D 0%, rgba(20,24,29,0.94) 100%);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.pf-app .brand{display:flex;align-items:center;gap:10px;}
+.pf-app .brand .mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(145deg, var(--rust), #8f3d13);display:flex;align-items:center;justify-content:center;}
+.pf-app .brand-text .t1{font-family:'Oswald';font-size:15px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+.pf-app .brand-text .t2{font-size:11px;color:var(--muted);margin-top:2px;}
+.pf-app .icon-btn{width:34px;height:34px;border-radius:9px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;}
+.pf-app .status-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;background:#888;}
+.pf-app .status-dot.on{background:var(--good);box-shadow:0 0 8px var(--good);}
+
+.pf-app main{max-width:540px;margin:0 auto;padding:16px;}
+.pf-app .hero{background:linear-gradient(180deg, var(--panel) 0%, #171b20 100%);border:1px solid var(--line);border-radius:18px;padding:22px 18px;position:relative;overflow:hidden;}
+.pf-app .gauge-wrap{width:200px;height:200px;margin:8px auto;position:relative;}
+.pf-app .gauge-track{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -135deg, var(--good) 0deg 90deg, var(--amber) 90deg 150deg, var(--danger) 150deg 270deg);}
+.pf-app .gauge-center{position:absolute;inset:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #262c33, #14171b 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.pf-app .gauge-value{font-family:'IBM Plex Mono';font-weight:700;font-size:28px;}
+.pf-app .gauge-unit{font-size:10px;color:var(--muted);margin-top:4px;}
+.pf-app .gauge-needle{position:absolute;left:50%;top:50%;width:3px;height:70px;background:linear-gradient(180deg, var(--ink), transparent 92%);transform-origin:50% 100%;border-radius:3px;}
+.pf-app .gauge-hub{position:absolute;left:50%;top:50%;width:10px;height:10px;background:var(--rust);border-radius:50%;transform:translate(-50%,-50%);z-index:3;}
+
+.pf-app section{margin-top:22px;}
+.pf-app .sec-title{font-family:'Oswald';font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);margin-bottom:10px;}
+
+.pf-app .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
+.pf-app .card-title{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.pf-app .card-val{font-family:'IBM Plex Mono';font-size:18px;font-weight:700;}
+.pf-app .card-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+
+.pf-app .entry{display:flex;gap:11px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start;}
+.pf-app .entry:last-child{border-bottom:none;}
+.pf-app .entry-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.pf-app .entry-dot.turno{background:var(--rust);}
+.pf-app .entry-dot.receb{background:var(--amber);}
+.pf-app .entry-main{flex:1;min-width:0;}
+.pf-app .entry-title{font-size:12px;font-weight:500;}
+.pf-app .entry-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3;}
+.pf-app .entry-val{font-family:'IBM Plex Mono';font-size:13px;font-weight:600;}
+
+.pf-app .bottom-actions{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;gap:10px;padding:12px 16px 20px;background:linear-gradient(180deg, rgba(18,21,26,0) 0%, #12151A 30%);}
+.pf-app .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:12px;border:none;cursor:pointer;font-family:'Inter';font-weight:600;font-size:13px;}
+.pf-app .btn-primary{background:linear-gradient(180deg, var(--rust), #a2470f);color:#fff;}
+.pf-app .btn-secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line);}
+
+.pf-app .overlay{position:fixed;inset:0;background:rgba(8,10,12,0.6);backdrop-filter:blur(2px);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;}
+.pf-app .overlay.open{opacity:1;pointer-events:auto;}
+.pf-app .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:540px;margin:0 auto;background:var(--panel);border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;padding:8px 18px 20px;transform:translateY(100%);transition:transform .28s;max-height:90vh;overflow-y:auto;}
+.pf-app .sheet.open{transform:translateY(0);}
+.pf-app .sheet-handle{width:38px;height:4px;background:var(--line);border-radius:3px;margin:8px auto 14px;}
+.pf-app .sheet h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:0.06em;font-size:16px;margin:0 0 4px;}
+.pf-app .sheet .sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.pf-app .sheet .subhead{font-size:12px;font-weight:600;color:var(--amber);margin:16px 0 8px;text-transform:uppercase;}
+.pf-app .field{margin-bottom:13px;}
+.pf-app .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.pf-app .field input,.pf-app .field select,.pf-app .field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font-size:14px;font-family:'Inter';}
+.pf-app .field input:focus,.pf-app .field select:focus,.pf-app .field textarea:focus{outline:2px solid var(--rust);outline-offset:1px;}
+.pf-app .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pf-app .sheet-actions{display:flex;gap:10px;margin-top:6px;}
+.pf-app .sheet-actions .btn{padding:13px;}
+.pf-app .hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
+.pf-app .alert{background:rgba(214,83,74,0.1);border:1px solid rgba(214,83,74,0.3);color:var(--danger);padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px;}

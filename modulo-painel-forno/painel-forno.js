@@ -22,7 +22,7 @@
   var TEMPLATE = [
     '<header>',
     '  <div class="brand">',
-    '    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-2-1-3.5-2.2-5 .3 2-1 3-2.3 2C14.8 8 14 5.5 12 2z" fill="#fff" width="19"/></svg></div>',
+    '    <div class="kf-logo"><img src="logo-kalfix.png" alt="Grupo Kalfix"></div>',
     '    <div class="brand-text"><div class="t1">Painel Forno</div><div class="t2">Sync em tempo real</div></div>',
     '  </div>',
     '  <div style="display:flex;align-items:center;gap:10px;">',

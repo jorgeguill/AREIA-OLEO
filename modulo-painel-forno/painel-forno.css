@@ -76,3 +76,6 @@
 .pf-app .sheet-actions .btn{padding:13px;}
 .pf-app .hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .pf-app .alert{background:rgba(214,83,74,0.1);border:1px solid rgba(214,83,74,0.3);color:var(--danger);padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px;}
+
+.pf-app .brand .kf-logo{background:#fff;border-radius:8px;padding:4px 8px;display:flex;align-items:center;box-shadow:0 2px 8px -3px rgba(0,0,0,.5);}
+.pf-app .brand .kf-logo img{height:34px;width:auto;display:block;}

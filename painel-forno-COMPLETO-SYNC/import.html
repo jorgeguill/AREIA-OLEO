@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Importar histórico — Painel Forno</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+body{background:#12151A;color:#EDEAE4;font-family:system-ui,sans-serif;padding:20px;max-width:600px;margin:0 auto;}
+h1{font-size:18px;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:16px 0;}
+td,th{border:1px solid #333A43;padding:6px;text-align:left;}
+.warn{color:#E8A33D;}
+button{background:#C1571F;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;width:100%;margin-top:12px;cursor:pointer;}
+button:disabled{opacity:0.5;}
+#log{white-space:pre-wrap;font-family:monospace;font-size:12px;margin-top:16px;background:#1B1F25;padding:10px;border-radius:8px;max-height:300px;overflow:auto;}
+.kalfix-logo{display:inline-flex;align-items:center;background:#fff;border-radius:9px;padding:4px 8px;box-shadow:0 1px 3px rgba(0,0,0,.25);}.kalfix-logo img{height:26px;display:block;}.kalfix-logohead{margin:0 0 12px;}
+</style>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAkFBMVEX///////7//v///v7//f7//f3//P3//Pz/+/v++Pn+9fX+8PH97O396en95uf84eL82Nn70NL6x8n6vb/5trn5s7X4r7L4rrD4rK/4q674qaz4p6v4pqn3pKf3oqX3n6L3nJ/3mZz2l5r2lZj2kZX2jpL2jJD1iY31h4v1hor1hIj1g4f1gYb0fYL0en70dHn/Tv45AAADZ0lEQVR42u1X17LbNhCFDeKy997BXsDy/3/nleJMBJKRJSUPmYzxIA0pgrvYU3aF0O/1e/3HF8YEEwE+8D9/1SebiGJavu25tqNqH0UVVE1tqzWfunyx9c+SsNwlrfpwLmosfnIGZLMqZ0nXFMZndSRohejVEObo6zMUVa9vUhYtSPwILoKcYoymorUJ/ghuyGCP2jbp30BAl/gUaDn5uyy9XDTVlHkUvCUZHeXV/SKi3mO5MbJWWkwqf4IvxfybI0HN/I0IPIzBbsqYL9PsWki4fIHsMy5djHVv9Y7x3Kb2ZHyZgJut1iPjICU62fD1eEx1DRff4W/+XJq9RYyjDFZ2R8N8maZwpJUv4QsKmKyklcwlRQI+FkZ+0fTx6l7VUTKWYNd5GB2XJ7Go9/kcD1V5IS6Mt7Cvk8cNGBkWF0lCQ7jk9RDs8qkG34mcNn24ifiZOCOIftN365/kJSI/YeFiK4e0uAuT1n0M+h6D/SQvSHfP6WJf4vNnjCZjcQ8fadu7pweJOaQsXJ+84BYjq4ZoKssp8I5nIGgOpqLOladaGbI5AX2zZPzCZx4ObbLr0vdnDmX0oO9opPl2JoKobMFISz4z/HV0WXdNmy5mWXk8AsZJDr+sB46a/DX+pjbFHPX12aZFVBVTuFqPNRCQ6fJMggt9z25Mks4wantazxyMQOXJ0/FBTd0Ny/KMt4jabA437j4he0D5J4FNN744Zzli0dyyNuJgFOSw7Q/aJ6hLWdxddArJHKLdEHlDidkhKYikFlWtnzvFzYKhiR7UuKcVO6QAxuHsl5rT/CGeubMR1OZnemMkc+7/19NesB36ArT3goJRCq+1Nd1bnAOMw02A5956bRoCsv0NczCiLQDtbdarzVE2U5nDXPG7u/YU8dX2KvEJOOl80961Cz9R7c8lEG1Pmj5hWecqwh/33h1S6gJcvM6XIHxjMDJV3VANTTNUHdo7uHg8lXSyDE03FOvXsw7Baw6MHJKJ0imF6LcpLWVpBxLIR199gQ6G3RXsbn3Z3cUpzEngZOFQU/fFU5hVWcMG6CERTGlL2rZgYn0H7vLStAZcIloTD0My57QPR3DxmDU0VeUnnn9mquK7XUvXYhjKtahjy3xvZr8/quqWY3u2Y+nqnVZvjqnksUMI/8J/jv/z+gFErFDTzcuZqwAAAABJRU5ErkJggg==">
+</head>
+<body>
+<div class="kalfix-logohead"><span class="kalfix-logo"><img src="data:image/png;base64,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" alt="Grupo Kalfix"></span></div>
+<h1>Importar recebimentos de óleo (histórico do caderno)</h1>
+<p>Isso vai gravar até <b>18 registros</b> de recebimento de óleo no Firebase compartilhado. Confira a tabela antes de clicar em importar. Linhas marcadas com <span class="warn">⚠️</span> têm horário aproximado — confira depois se quiser corrigir.</p>
+<p style="color:#4F9D69;"><b>✅ Seguro contra duplicidade:</b> antes de gravar, a página lê os recebimentos já cadastrados e <b>pula</b> os que já existem (mesma <b>data + hora + fornecedor</b>). Rodar de novo não duplica.</p>
+<table id="tbl"></table>
+<button id="btnImport">Importar 18 registros</button>
+<p style="color:#4F9D69;margin-top:22px;"><b>Preencher testes e preço em branco:</b> marca <b>Combustão = Aprovado</b>, <b>Água = Aprovado</b> e <b>R$ 2,50/L</b> em todos os recebimentos que estão sem esses dados. Só preenche o que está <b>vazio</b> — não altera nada que você já marcou (ex.: um Reprovado). Pode rodar de novo sem problema.</p>
+<button id="btnFill" style="background:#4F9D69;">Preencher em branco (Aprovado · R$ 2,50)</button>
+<div id="log"></div>
+
+<script>
+const DATA = [
+  {data:"2026-06-09", hora:"14:36", fornecedor:"Manoel", litros:1000, aprox:false},
+  {data:"2026-06-10", hora:"15:19", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-11", hora:"09:56", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-11", hora:"13:34", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-12", hora:"14:09", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-15", hora:"12:01", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-16", hora:"13:26", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-17", hora:"07:20", fornecedor:"Madalena", litros:2000, aprox:false},
+  {data:"2026-06-18", hora:"12:34", fornecedor:"Wedeson", litros:1000, aprox:true},
+  {data:"2026-06-19", hora:"10:38", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-22", hora:"12:00", fornecedor:"Manoel", litros:1000, aprox:true},
+  {data:"2026-06-22", hora:"13:16", fornecedor:"Walk", litros:800, aprox:true},
+  {data:"2026-06-23", hora:"11:10", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-06-25", hora:"11:28", fornecedor:"Antonio", litros:1000, aprox:true},
+  {data:"2026-06-26", hora:"11:04", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-03", hora:"08:12", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-06", hora:"07:31", fornecedor:"Madalena", litros:2000, aprox:true},
+  {data:"2026-07-07", hora:"08:10", fornecedor:"Manoel", litros:1000, aprox:true},
+];
+
+const tbl=document.getElementById('tbl');
+tbl.innerHTML='<tr><th>Data</th><th>Hora</th><th>Fornecedor</th><th>Litros</th></tr>'+
+  DATA.map(d=>`<tr><td>${d.data}</td><td>${d.hora}${d.aprox?' <span class="warn">⚠️</span>':''}</td><td>${d.fornecedor}</td><td>${d.litros}L</td></tr>`).join('');
+
+const firebaseConfig={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno"};
+const app=firebase.initializeApp(firebaseConfig,'importApp');
+const db=firebase.database(app);
+
+// Chave única de um recebimento: data + hora + fornecedor
+function chaveReceb(v){ return `${(v.data||'').trim()}|${(v.hora||'').trim()}|${(v.fornecedor||'').trim()}`; }
+
+document.getElementById('btnImport').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btnImport');
+  const log=document.getElementById('log');
+  btn.disabled=true;
+  btn.textContent='Verificando existentes…';
+  log.textContent='Lendo recebimentos já cadastrados para não duplicar...\n';
+
+  const existentes=new Set();
+  try{
+    const snap=await db.ref('recebimentos').once('value');
+    snap.forEach(ch=>{ const v=ch.val()||{}; if(v.data&&v.hora) existentes.add(chaveReceb(v)); });
+  }catch(e){
+    log.textContent+=`❌ Não consegui ler os recebimentos existentes: ${e.message}\nAbortado para não arriscar duplicar. Tente de novo.`;
+    btn.textContent='Erro — tente de novo';
+    btn.disabled=false;
+    return;
+  }
+  log.textContent+=`${existentes.size} recebimento(s) já no sistema.\n\n`;
+  btn.textContent='Importando…';
+
+  let ok=0, fail=0, skip=0;
+  for(const d of DATA){
+    const entry={
+      data:d.data, hora:d.hora,
+      antes:0, depois:d.litros,
+      fornecedor:d.fornecedor, recebedor:"Guilherme"
+    };
+    const key=chaveReceb(entry);
+    if(existentes.has(key)){
+      skip++;
+      log.textContent+=`⏭️ ${d.data} ${d.hora} ${d.fornecedor} — já existe, pulado\n`;
+      continue;
+    }
+    try{
+      await db.ref('recebimentos').push(entry);
+      existentes.add(key);
+      ok++;
+      log.textContent+=`✅ ${d.data} ${d.fornecedor} ${d.litros}L\n`;
+    }catch(e){
+      fail++;
+      log.textContent+=`❌ ${d.data} ${d.fornecedor}: ${e.message}\n`;
+    }
+  }
+  log.textContent+=`\nConcluído: ${ok} importados, ${skip} já existiam (pulados), ${fail} falharam.`;
+  btn.textContent='Importação concluída';
+});
+
+function vazio(v){ return v===undefined||v===null||v===''; }
+document.getElementById('btnFill').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btnFill');
+  const log=document.getElementById('log');
+  btn.disabled=true; btn.textContent='Preenchendo…';
+  log.textContent='Lendo recebimentos...\n';
+  let snap;
+  try{ snap=await db.ref('recebimentos').once('value'); }
+  catch(e){ log.textContent+=`❌ Falha ao ler: ${e.message}`; btn.textContent='Erro — tente de novo'; btn.disabled=false; return; }
+  let upd=0, jaok=0, fail=0, total=0;
+  const tarefas=[];
+  snap.forEach(ch=>{
+    total++;
+    const v=ch.val()||{};
+    const up={};
+    if(vazio(v.teste_combustao)) up.teste_combustao='Aprovado';
+    if(vazio(v.teste_agua)) up.teste_agua='Aprovado';
+    if(vazio(v.preco_litro)) up.preco_litro=2.5;
+    if(Object.keys(up).length===0){ jaok++; return; }
+    tarefas.push({id:ch.key, up, info:`${v.data||''} ${v.hora||''} ${v.fornecedor||''}`});
+  });
+  log.textContent+=`${total} recebimento(s). ${tarefas.length} para preencher, ${jaok} já completos.\n\n`;
+  for(const t of tarefas){
+    try{ await db.ref('recebimentos/'+t.id).update(t.up); upd++; log.textContent+=`✅ ${t.info} — ${Object.keys(t.up).join(', ')}\n`; }
+    catch(e){ fail++; log.textContent+=`❌ ${t.info}: ${e.message}\n`; }
+  }
+  log.textContent+=`\nConcluído: ${upd} preenchidos, ${jaok} já estavam completos, ${fail} falharam.`;
+  btn.textContent='Preenchimento concluído';
+});
+</script>
+</body>
+</html>

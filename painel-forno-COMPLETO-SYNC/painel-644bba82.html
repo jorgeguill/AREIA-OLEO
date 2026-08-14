@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel Administrativo — Painel Forno</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+:root{ --bg:#12151A; --panel:#1B1F25; --panel2:#232830; --line:#333A43; --ink:#EDEAE4; --muted:#8D96A1; --rust:#C1571F; --amber:#E8A33D; --good:#4F9D69; --danger:#D6534A; }
+*{box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;margin:0;padding:16px 16px 60px;}
+h1{font-family:'Oswald',sans-serif;font-size:20px;margin:0 0 4px;}
+.sub{color:var(--muted);font-size:12px;margin-bottom:20px;}
+a.back{color:var(--amber);font-size:12px;text-decoration:none;}
+section{margin-top:28px;}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;}
+.chart-wrap{position:relative;height:220px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.stat{background:var(--panel2);border-radius:10px;padding:10px;text-align:center;}
+.stat .v{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;}
+.stat .l{font-size:10px;color:var(--muted);margin-top:2px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;white-space:nowrap;}
+th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--panel);}
+.tblwrap{overflow-x:auto;border-radius:10px;}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;margin-right:4px;}
+.btn.danger{color:var(--danger);border-color:rgba(214,83,74,.4);}
+.btn.primary{background:var(--rust);border-color:var(--rust);color:#fff;}
+input.edit{width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 6px;font-size:11px;}
+input.edit.wide{width:110px;}
+select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 6px;font-size:11px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.field input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:8px;font-size:14px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#cfgMsg{font-size:12px;color:var(--good);margin-top:8px;}
+.chip-group-mini{display:flex;flex-wrap:wrap;gap:4px;max-width:220px;}
+.chip-mini{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer;font-family:'Inter';white-space:nowrap;}
+.chip-mini.active{background:var(--rust);border-color:var(--rust);color:#fff;}
+.chip-mini.tst-ok.active{background:var(--good);border-color:var(--good);color:#fff;}
+.chip-mini.tst-no.active{background:var(--danger);border-color:var(--danger);color:#fff;}
+.kalfix-logo{display:inline-flex;align-items:center;background:#fff;border-radius:9px;padding:4px 8px;box-shadow:0 1px 3px rgba(0,0,0,.25);}.kalfix-logo img{height:26px;display:block;}.kalfix-logohead{margin:0 0 12px;}
+</style>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAkFBMVEX///////7//v///v7//f7//f3//P3//Pz/+/v++Pn+9fX+8PH97O396en95uf84eL82Nn70NL6x8n6vb/5trn5s7X4r7L4rrD4rK/4q674qaz4p6v4pqn3pKf3oqX3n6L3nJ/3mZz2l5r2lZj2kZX2jpL2jJD1iY31h4v1hor1hIj1g4f1gYb0fYL0en70dHn/Tv45AAADZ0lEQVR42u1X17LbNhCFDeKy997BXsDy/3/nleJMBJKRJSUPmYzxIA0pgrvYU3aF0O/1e/3HF8YEEwE+8D9/1SebiGJavu25tqNqH0UVVE1tqzWfunyx9c+SsNwlrfpwLmosfnIGZLMqZ0nXFMZndSRohejVEObo6zMUVa9vUhYtSPwILoKcYoymorUJ/ghuyGCP2jbp30BAl/gUaDn5uyy9XDTVlHkUvCUZHeXV/SKi3mO5MbJWWkwqf4IvxfybI0HN/I0IPIzBbsqYL9PsWki4fIHsMy5djHVv9Y7x3Kb2ZHyZgJut1iPjICU62fD1eEx1DRff4W/+XJq9RYyjDFZ2R8N8maZwpJUv4QsKmKyklcwlRQI+FkZ+0fTx6l7VUTKWYNd5GB2XJ7Go9/kcD1V5IS6Mt7Cvk8cNGBkWF0lCQ7jk9RDs8qkG34mcNn24ifiZOCOIftN365/kJSI/YeFiK4e0uAuT1n0M+h6D/SQvSHfP6WJf4vNnjCZjcQ8fadu7pweJOaQsXJ+84BYjq4ZoKssp8I5nIGgOpqLOladaGbI5AX2zZPzCZx4ObbLr0vdnDmX0oO9opPl2JoKobMFISz4z/HV0WXdNmy5mWXk8AsZJDr+sB46a/DX+pjbFHPX12aZFVBVTuFqPNRCQ6fJMggt9z25Mks4wantazxyMQOXJ0/FBTd0Ny/KMt4jabA437j4he0D5J4FNN744Zzli0dyyNuJgFOSw7Q/aJ6hLWdxddArJHKLdEHlDidkhKYikFlWtnzvFzYKhiR7UuKcVO6QAxuHsl5rT/CGeubMR1OZnemMkc+7/19NesB36ArT3goJRCq+1Nd1bnAOMw02A5956bRoCsv0NczCiLQDtbdarzVE2U5nDXPG7u/YU8dX2KvEJOOl80961Cz9R7c8lEG1Pmj5hWecqwh/33h1S6gJcvM6XIHxjMDJV3VANTTNUHdo7uHg8lXSyDE03FOvXsw7Baw6MHJKJ0imF6LcpLWVpBxLIR199gQ6G3RXsbn3Z3cUpzEngZOFQU/fFU5hVWcMG6CERTGlL2rZgYn0H7vLStAZcIloTD0My57QPR3DxmDU0VeUnnn9mquK7XUvXYhjKtahjy3xvZr8/quqWY3u2Y+nqnVZvjqnksUMI/8J/jv/z+gFErFDTzcuZqwAAAABJRU5ErkJggg==">
+</head>
+<body>
+<div class="kalfix-logohead"><span class="kalfix-logo"><img src="data:image/png;base64,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" alt="Grupo Kalfix"></span></div>
+
+<a class="back" href="/">← Voltar ao app</a>
+<h1>Painel Administrativo</h1>
+<div class="sub">Link de acesso restrito — não compartilhe com operadores.</div>
+
+<section>
+  <h2>Resumo</h2>
+  <div class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:12px;color:var(--muted);">📅 Período dos gráficos e indicadores:</span>
+    <select id="mesSel" style="background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Inter';"></select>
+  </div>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="statTurnos">—</div><div class="l">turnos registrados</div></div>
+    <div class="stat"><div class="v" id="statReceb">—</div><div class="l">recebimentos</div></div>
+    <div class="stat"><div class="v" id="statMedia">—</div><div class="l">média L/ton</div></div>
+    <div class="stat"><div class="v" id="statTotalOleo">—</div><div class="l">óleo recebido (L)</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Custo do óleo</h2>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="custoTon">—</div><div class="l">R$ / ton seca</div></div>
+    <div class="stat"><div class="v" id="custoPeriodo">—</div><div class="l">custo de óleo no período</div></div>
+    <div class="stat"><div class="v" id="custoM3">—</div><div class="l">R$ / m³ úmida</div></div>
+    <div class="stat"><div class="v" id="custoPreco">—</div><div class="l">preço médio do litro</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Abastecimento de óleo</h2>
+  <div class="grid2">
+    <div class="stat"><div class="v" id="oleoUltimo">—</div><div class="l">último recebimento</div></div>
+    <div class="stat"><div class="v" id="oleoDias">—</div><div class="l">tempo desde o último</div></div>
+    <div class="stat"><div class="v" id="oleoInterv">—</div><div class="l">intervalo médio entre recebimentos</div></div>
+  </div>
+  <div id="oleoAlerta" style="display:none;margin-top:10px;background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.4);color:var(--amber);padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.5;"></div>
+</section>
+
+<section>
+  <h2>Consumo L/ton por turno</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartLton"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Areia processada por dia (m³ úmida)</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartAreia"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Óleo recebido por fornecedor</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="chartOleo"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Desempenho por colaborador</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Areia processada (m³ úmida) por operador</div><div class="chart-wrap"><canvas id="chartColabAreia"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média L/ton por operador (menor = melhor)</div><div class="chart-wrap"><canvas id="chartColabLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Tempo médio de secagem por lote (min) por operador</div><div class="chart-wrap"><canvas id="chartColabTempo"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Paradas / problemas mais citados</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Baseado nas observações dos turnos — um turno pode citar mais de um problema</div><div class="chart-wrap"><canvas id="chartParadas"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Produtividade e comparativos</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Produtividade — ton seca por hora de secagem, por operador (maior = melhor)</div><div class="chart-wrap"><canvas id="chartProd"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por origem da areia (menor = melhor)</div><div class="chart-wrap"><canvas id="chartOrigem"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por turno (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTurno"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Tendência mês a mês</h2>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média de L/ton por mês (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTendLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Custo R$/ton por mês</div><div class="chart-wrap"><canvas id="chartTendCusto"></canvas></div></div>
+</section>
+
+<section>
+  <h2>Relatório e dados</h2>
+  <div class="card">
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">Exporta o período do filtro acima (ou "Todos os meses") em CSV — abre no Excel/Google Planilhas.</div>
+    <button class="btn primary" onclick="exportTurnos()">⬇ Exportar turnos (CSV)</button>
+    <button class="btn" onclick="exportReceb()">⬇ Exportar recebimentos (CSV)</button>
+    <div style="height:12px;"></div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">Reescreve o campo operador dos turnos já gravados usando o nome padronizado (ex.: Anaílson → Anailson, lívio → Lívio).</div>
+    <button class="btn" style="border-color:rgba(232,163,61,.45);color:var(--amber);" onclick="padronizarNomes()">✎ Padronizar nomes de operador</button>
+    <div id="padMsg" style="font-size:12px;color:var(--good);margin-top:8px;"></div>
+  </div>
+</section>
+
+<section>
+  <h2>Parâmetros da areia</h2>
+  <div class="card">
+    <form id="formCfg">
+      <div class="row2">
+        <div class="field"><label>Umidade bruta (%)</label><input type="number" step="0.1" name="umidade" required></div>
+        <div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" name="densidade" required></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Meta L/ton</label><input type="number" step="0.1" name="meta" required></div>
+        <div class="field"><label>Tolerância (%)</label><input type="number" step="1" name="tolerancia" required></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>m³ por concha</label><input type="number" step="0.01" name="concha_m3" required></div>
+        <div class="field"></div>
+      </div>
+      <button type="submit" class="btn primary">Salvar parâmetros</button>
+      <div id="cfgMsg"></div>
+    </form>
+  </div>
+</section>
+
+<section>
+  <h2>Histórico completo — Turnos</h2>
+  <div class="card tblwrap">
+    <table id="tblTurnos">
+      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Origem</th><th>m³ úmida</th><th>Silo</th><th>Conchas</th><th>Tempo</th><th>Óleo</th><th>L/ton</th><th>Obs</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Histórico completo — Recebimentos</h2>
+  <div class="card tblwrap">
+    <table id="tblReceb">
+      <thead><tr><th>Data</th><th>Hora</th><th>Antes</th><th>Depois</th><th>Litros</th><th>R$/L</th><th>Combustão</th><th>Água</th><th>Fornecedor</th><th>Recebedor</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1};
+const app=firebase.initializeApp(DEFAULT_CFG,'adminApp');
+const db=firebase.database(app);
+let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3};
+let turnos=[], recebimentos=[];
+let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo,chartParadas;
+const FORNECEDORES=["Madalena","José William","Eugênia","Emanuel","Walk"];
+const OPERADORES=["Anailson","Lívio","William","João Victor","Renato","Rafael"];
+
+function snapToList(val){ if(!val)return []; return Object.keys(val).map(id=>({id,...val[id]})); }
+
+function formatDate(iso){
+  if(!iso)return '';
+  let [y,m,d]=iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+function conchaM3(){ return Number(cfg.concha_m3)||2.1; }
+function turnoConchas(t){
+  if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0);
+  return Number(t.conchas)||0;
+}
+function tonOf(t){ let m3u=Number(t.m3_umida); if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c)m3u=c*conchaM3(); } m3u=m3u||0; return {m3u,ton:m3u*(1-cfg.umidade/100)*cfg.densidade}; }
+// Tempo de secagem de um lote: minutos entre início e fim (vira o dia se passar da meia-noite)
+function tempoMinLote(ini,fim){ if(!ini||!fim)return null; let a=String(ini).split(':').map(Number),b=String(fim).split(':').map(Number); if(a.length<2||b.length<2||a.some(isNaN)||b.some(isNaN))return null; let d=(b[0]*60+b[1])-(a[0]*60+a[1]); if(d<0)d+=1440; return d; }
+// Tempo de secagem do turno: soma automática dos lotes (por tempo_min ou calculado do início/fim); cai para o total salvo
+function tempoTurno(t){ let lotes=Array.isArray(t.lotes)?t.lotes:[]; let sum=0,has=false; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ sum+=m; has=true; } }); if(has)return sum; if(t.tempo_secagem_min!=null&&isFinite(t.tempo_secagem_min)&&Number(t.tempo_secagem_min)>0)return Number(t.tempo_secagem_min); return null; }
+function tempoFmt(min){ if(min==null||isNaN(min))return ''; let h=Math.floor(min/60),m=min%60; return h?`${h}h${m?(' '+m+'m'):''}`:`${m}m`; }
+function mediaLton(){ let litros=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0); let ton=turnos.reduce((s,t)=>s+tonOf(t).ton,0); return ton>0?litros/ton:0; }
+function compute(t){
+  let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
+  let oleo=0, medido=false;
+  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim)); medido=true; }
+  if(t.oleo_receb){ oleo+=Number(t.oleo_receb); medido=true; }
+  if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
+  let lton=Number(t.consumo_manual)||null, estimado=false;
+  if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
+  else if(!lton&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  return{m3u,m3s,ton,oleo,lton,estimado};
+}
+
+db.ref('parametros').on('value',snap=>{
+  let v=snap.val();
+  if(v){ cfg={...cfg,...v}; fillCfgForm(); renderAll(); }
+});
+
+function fillCfgForm(){
+  let f=document.getElementById('formCfg');
+  f.umidade.value=cfg.umidade; f.densidade.value=cfg.densidade;
+  f.meta.value=cfg.meta; f.tolerancia.value=cfg.tolerancia;
+  f.concha_m3.value=cfg.concha_m3||2.1;
+}
+fillCfgForm();
+
+document.getElementById('formCfg').addEventListener('submit',e=>{
+  e.preventDefault();
+  let f=e.target;
+  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value),concha_m3:Number(f.concha_m3.value)};
+  db.ref('parametros').set(params).then(()=>{
+    document.getElementById('cfgMsg').textContent='✅ Salvo — vale para o app de todos os operadores também.';
+    setTimeout(()=>document.getElementById('cfgMsg').textContent='',3000);
+  }).catch(err=>{ document.getElementById('cfgMsg').textContent='❌ '+err.message; });
+});
+
+db.ref('turnos').on('value',snap=>{ turnos=snapToList(snap.val()); renderAll(); });
+db.ref('recebimentos').on('value',snap=>{ recebimentos=snapToList(snap.val()); renderAll(); });
+
+// ===== Filtro de mês/ano (afeta gráficos e indicadores; tabelas ficam completas) =====
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let mesFiltro='';
+function mesDe(d){ return (d||'').slice(0,7); }
+function mesLabel(ym){ let p=ym.split('-'); return (MESES[(+p[1])-1]||p[1])+' / '+p[0]; }
+function turnosF(){ return mesFiltro?turnos.filter(t=>mesDe(t.data)===mesFiltro):turnos; }
+function recebF(){ return mesFiltro?recebimentos.filter(r=>mesDe(r.data)===mesFiltro):recebimentos; }
+function fillMesSel(){
+  let set=new Set();
+  turnos.forEach(t=>{ if(t.data)set.add(mesDe(t.data)); });
+  recebimentos.forEach(r=>{ if(r.data)set.add(mesDe(r.data)); });
+  let meses=[...set].filter(Boolean).sort();
+  let sel=document.getElementById('mesSel'); if(!sel)return;
+  let cur=mesFiltro;
+  if(cur===''&&!sel.dataset.init&&meses.length){ cur=meses[meses.length-1]; } // 1ª carga: mês mais recente
+  sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
+  sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
+}
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
+
+function renderAll(){
+  fillMesSel();
+  renderStats();
+  renderCusto();
+  renderOleoSupply();
+  renderCharts();
+  renderColab();
+  renderParadas();
+  renderComparativos();
+  renderTendencia();
+  renderTurnosTable();
+  renderRecebTable();
+}
+let _charts={};
+function drawBar(cid,labels,data,color,horiz){ let el=document.getElementById(cid); if(!el)return; if(_charts[cid])_charts[cid].destroy(); _charts[cid]=new Chart(el,{type:'bar',data:{labels,datasets:[{data,backgroundColor:color}]},options:{indexAxis:(horiz===false)?'x':'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}}); }
+// Produtividade (ton/h) por operador + comparativos por origem e turno (respeitam o filtro de mês)
+function renderComparativos(){
+  const turnos=turnosF();
+  let po={};
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); let horas=0; (Array.isArray(t.lotes)?t.lotes:[]).forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m>0)horas+=m/60; }); if(!po[op])po[op]={ton:0,h:0}; po[op].ton+=c.ton||0; po[op].h+=horas; });
+  let ops=Object.keys(po).filter(o=>po[o].h>0).sort((a,b)=>(po[b].ton/po[b].h)-(po[a].ton/po[a].h));
+  drawBar('chartProd',ops,ops.map(o=>+(po[o].ton/po[o].h).toFixed(2)),'#8ac6a0');
+  let orig={};
+  turnos.forEach(t=>{ let o=((t.fornecedor_areia||'').trim())||'—'; let c=compute(t); if(!orig[o])orig[o]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){orig[o].s+=c.lton;orig[o].n++;} });
+  let ok=Object.keys(orig).filter(o=>orig[o].n>0).sort((a,b)=>(orig[a].s/orig[a].n)-(orig[b].s/orig[b].n));
+  drawBar('chartOrigem',ok,ok.map(o=>+(orig[o].s/orig[o].n).toFixed(2)),'#E8A33D');
+  let TUR=['Manhã','Tarde','Noite'], tt={};
+  turnos.forEach(t=>{ let tu=(t.turno||'—'); let c=compute(t); if(!tt[tu])tt[tu]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){tt[tu].s+=c.lton;tt[tu].n++;} });
+  let tk=TUR.filter(x=>tt[x]&&tt[x].n>0).concat(Object.keys(tt).filter(x=>TUR.indexOf(x)<0&&tt[x].n>0));
+  drawBar('chartTurno',tk,tk.map(x=>+(tt[x].s/tt[x].n).toFixed(2)),'#7aa7d9');
+}
+// Tendência mês a mês (usa todos os meses, ignora o filtro)
+function renderTendencia(){
+  let pm=precoMedio(), byM={};
+  turnos.forEach(t=>{ let m=mesDe(t.data); if(!m)return; let c=compute(t); if(!byM[m])byM[m]={s:0,n:0,ton:0,oleo:0}; if(c.lton&&isFinite(c.lton)){byM[m].s+=c.lton;byM[m].n++;} byM[m].ton+=c.ton||0; byM[m].oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  let ms=Object.keys(byM).sort(), labels=ms.map(mesLabel);
+  if(_charts.chartTendLton)_charts.chartTendLton.destroy();
+  _charts.chartTendLton=new Chart(document.getElementById('chartTendLton'),{type:'line',data:{labels,datasets:[{label:'L/ton',data:ms.map(m=>byM[m].n?+(byM[m].s/byM[m].n).toFixed(2):null),borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},{label:'Meta',data:ms.map(()=>cfg.meta),borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
+  if(_charts.chartTendCusto)_charts.chartTendCusto.destroy();
+  _charts.chartTendCusto=new Chart(document.getElementById('chartTendCusto'),{type:'bar',data:{labels,datasets:[{data:ms.map(m=>byM[m].ton>0?+((byM[m].oleo*pm)/byM[m].ton).toFixed(2):null),backgroundColor:'#4F9D69'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
+}
+function _set(id,v){ let e=document.getElementById(id); if(e)e.textContent=v; }
+function brl(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function brl0(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
+// Preço médio do litro (ponderado pelos litros recebidos); cai para 2,50 se não houver preço
+function precoMedio(){ let s=0,l=0; recebimentos.forEach(r=>{ let p=Number(r.preco_litro), q=Number(r.depois)-Number(r.antes); if(isFinite(p)&&p>0&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:2.5; }
+// Custo do óleo consumido / produção (usa mês filtrado)
+function renderCusto(){
+  const turnos=turnosF(); let pm=precoMedio(); let ton=0,m3=0,oleo=0;
+  turnos.forEach(t=>{ let c=compute(t); ton+=c.ton||0; m3+=c.m3u||0; oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  let custo=oleo*pm;
+  _set('custoPreco',brl(pm));
+  _set('custoPeriodo',custo>0?brl0(custo):'—');
+  _set('custoTon',ton>0?brl(custo/ton):'—');
+  _set('custoM3',m3>0?brl(custo/m3):'—');
+}
+// Cadência de abastecimento (all-time; alerta se está demorando mais que a média)
+function renderOleoSupply(){
+  let rs=recebimentos.filter(r=>r.data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let al=document.getElementById('oleoAlerta');
+  if(!rs.length){ _set('oleoUltimo','—'); _set('oleoDias','—'); _set('oleoInterv','—'); if(al)al.style.display='none'; return; }
+  let last=rs[rs.length-1];
+  let litUlt=(Number(last.depois)-Number(last.antes))||0;
+  let dLast=Math.max(0,Math.floor((Date.now()-new Date(last.data+'T12:00:00').getTime())/86400000));
+  let gaps=[]; for(let i=1;i<rs.length;i++){ gaps.push((new Date(rs[i].data)-new Date(rs[i-1].data))/86400000); }
+  let interv=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
+  _set('oleoUltimo',formatDate(last.data)+' · '+litUlt+' L');
+  _set('oleoDias',dLast+' dia'+(dLast===1?'':'s'));
+  _set('oleoInterv',interv!=null?('~'+interv.toFixed(0)+' dias'):'—');
+  if(al){ if(interv!=null&&dLast>Math.ceil(interv)){ al.style.display='block'; al.textContent='⚠️ Faz '+dLast+' dias desde o último recebimento de óleo (a média é ~'+interv.toFixed(0)+' dias). Pode estar na hora de pedir.'; } else { al.style.display='none'; } }
+}
+// Categorias de parada extraídas do texto das observações
+const CAT_PARADAS=[
+  {nome:'Elevador / rosca',re:/elevad|rosca|mancal|rolament/i},
+  {nome:'Correia / transmissão',re:/correia|cinta|redutor|transmiss/i},
+  {nome:'Caldeira / forno / bico',re:/caldeir|forno|fornalh|\bbico|carv[ãa]o|pi[ãa]o|senta/i},
+  {nome:'Peneira',re:/peneir/i},
+  {nome:'Reco-reco / betoneira',re:/reco.?reco|betoneir/i},
+  {nome:'Falta de óleo',re:/acabou o [óo]leo|[óo]leo acabou|falta.*[óo]leo|sem [óo]leo|problema no [óo]leo/i},
+];
+function renderParadas(){
+  const turnos=turnosF();
+  let cont={}; CAT_PARADAS.forEach(c=>cont[c.nome]=0); let outros=0;
+  turnos.forEach(t=>{ let o=(t.obs||'').trim(); if(!o)return; let hit=false; CAT_PARADAS.forEach(c=>{ if(c.re.test(o)){ cont[c.nome]++; hit=true; } }); if(!hit)outros++; });
+  let pairs=CAT_PARADAS.map(c=>[c.nome,cont[c.nome]]); if(outros>0)pairs.push(['Outros',outros]);
+  pairs=pairs.filter(p=>p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if(chartParadas)chartParadas.destroy();
+  chartParadas=new Chart(document.getElementById('chartParadas'),{type:'bar',
+    data:{labels:pairs.map(p=>p[0]),datasets:[{data:pairs.map(p=>p[1]),backgroundColor:'#D6534A'}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',precision:0}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+}
+
+function stripAcc(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Normaliza nome do operador: ignora acento/maiúsculas e junta variações (Lívio/lívio/Livio, Anailson/Anaílson/Anailson Costa) num nome só
+function normOp(o){
+  o=(o||'').trim().replace(/\s+/g,' ');
+  if(!o||o==='—')return null;
+  let k=stripAcc(o).toLowerCase(), f=k.split(' ')[0];
+  const M={anailson:'Anailson',livio:'Lívio',william:'William',renato:'Renato',rafael:'Rafael',adriano:'Adriano',rodrigo:'Rodrigo',pedro:'Pedro',emanuel:'Emanuel'};
+  if(M[f])return M[f];
+  if(k.indexOf('joao')===0)return 'João Victor';
+  if(k.indexOf('jose vieira')===0)return 'José Vieira';
+  if(k.indexOf('jose william')===0)return 'José William';
+  return o.charAt(0).toUpperCase()+o.slice(1);
+}
+function renderColab(){
+  const turnos=turnosF();
+  let porOp={};
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
+  let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
+  function mk(refVar,canvas,data,color,horiz){ if(window[refVar])window[refVar].destroy(); window[refVar]=new Chart(document.getElementById(canvas),{type:'bar',data:{labels:ops,datasets:[{data,backgroundColor:color}]},options:{indexAxis:horiz?'y':'x',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}}); }
+  if(chartColabAreia)chartColabAreia.destroy();
+  chartColabAreia=new Chart(document.getElementById('chartColabAreia'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>+porOp[o].m3.toFixed(1)),backgroundColor:'#E8A33D'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+  if(chartColabLton)chartColabLton.destroy();
+  chartColabLton=new Chart(document.getElementById('chartColabLton'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>porOp[o].ltonN?+(porOp[o].ltonSum/porOp[o].ltonN).toFixed(2):null),backgroundColor:ops.map(o=>{ let v=porOp[o].ltonN?porOp[o].ltonSum/porOp[o].ltonN:0; return v&&v<=cfg.meta?'#4F9D69':(v<=cfg.meta*(1+cfg.tolerancia/100)?'#E8A33D':'#D6534A'); })}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+  if(chartColabTempo)chartColabTempo.destroy();
+  chartColabTempo=new Chart(document.getElementById('chartColabTempo'),{type:'bar',data:{labels:ops,datasets:[{data:ops.map(o=>porOp[o].tempoN?+(porOp[o].tempoSum/porOp[o].tempoN).toFixed(0):null),backgroundColor:'#7aa7d9'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}});
+}
+
+function renderStats(){
+  const turnos=turnosF(), recebimentos=recebF();
+  document.getElementById('statTurnos').textContent=turnos.length;
+  document.getElementById('statReceb').textContent=recebimentos.length;
+  let ltons=turnos.map(compute).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
+  let media=ltons.length?(ltons.reduce((a,b)=>a+b,0)/ltons.length):0;
+  document.getElementById('statMedia').textContent=media?media.toFixed(2):'—';
+  let totalOleo=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0);
+  document.getElementById('statTotalOleo').textContent=totalOleo.toFixed(0);
+}
+
+function renderCharts(){
+  const turnos=turnosF(), recebimentos=recebF();
+  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
+  let ltonData=sorted.map(t=>{let c=compute(t);return c.lton?+c.lton.toFixed(2):null;});
+  let metaLine=sorted.map(()=>cfg.meta);
+
+  if(chartLton)chartLton.destroy();
+  chartLton=new Chart(document.getElementById('chartLton'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'L/ton',data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
+      {label:'Meta',data:metaLine,borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
+  });
+
+  let byDay={};
+  sorted.forEach(t=>{ byDay[t.data]=(byDay[t.data]||0)+Number(t.m3_umida||0); });
+  let dayKeys=Object.keys(byDay).sort();
+  if(chartAreia)chartAreia.destroy();
+  chartAreia=new Chart(document.getElementById('chartAreia'),{
+    type:'bar',
+    data:{labels:dayKeys.map(formatDate),datasets:[{label:'m³ úmida',data:dayKeys.map(d=>byDay[d]),backgroundColor:'#E8A33D'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
+  });
+
+  let byForn={};
+  recebimentos.forEach(r=>{ let l=Number(r.depois)-Number(r.antes); byForn[r.fornecedor]=(byForn[r.fornecedor]||0)+l; });
+  let fornLabels=Object.keys(byForn);
+  if(chartOleo)chartOleo.destroy();
+  chartOleo=new Chart(document.getElementById('chartOleo'),{
+    type:'bar',
+    data:{labels:fornLabels,datasets:[{label:'Litros',data:fornLabels.map(f=>byForn[f]),backgroundColor:'#4F9D69'}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}
+  });
+}
+
+// ===== Relatório (CSV) e padronização de nomes =====
+function csvEsc(v){ v=(v==null?'':String(v)); return /[",;\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }
+function toCSV(rows){ return rows.map(r=>r.map(csvEsc).join(';')).join('\n'); }
+function baixarCSV(nome,rows){ let blob=new Blob(['﻿'+toCSV(rows)],{type:'text/csv;charset=utf-8;'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); a.remove(); }
+function exportTurnos(){
+  let pm=precoMedio();
+  let rows=[['Data','Turno','Operador','Origem','m3_umida','ton_seca','Silo','Conchas','Tempo_min','Oleo_L','L_ton','Custo_oleo_R$','Obs']];
+  turnosF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),(isFinite(c.oleo)?c.oleo.toFixed(0):''),(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
+  baixarCSV('turnos_'+(mesFiltro||'todos')+'.csv',rows);
+}
+function exportReceb(){
+  let rows=[['Data','Hora','Fornecedor','Litros','Preco_litro_R$','Total_R$','Combustao','Agua','Recebedor']];
+  recebF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(r=>{ let lit=(Number(r.depois)-Number(r.antes))||0,p=Number(r.preco_litro); rows.push([r.data,r.hora||'',r.fornecedor||'',lit,(isFinite(p)?p.toFixed(2):''),(isFinite(p)?(p*lit).toFixed(2):''),r.teste_combustao||'',r.teste_agua||'',r.recebedor||'']); });
+  baixarCSV('recebimentos_'+(mesFiltro||'todos')+'.csv',rows);
+}
+async function padronizarNomes(){
+  let alvo=turnos.filter(t=>{ let cn=normOp(t.operador); return cn&&cn!==t.operador; });
+  if(!alvo.length){ document.getElementById('padMsg').textContent='Nada a padronizar — todos já estão no padrão.'; return; }
+  if(!confirm('Padronizar '+alvo.length+' nome(s) de operador já gravados? Ex.: Anaílson → Anailson, lívio → Lívio.'))return;
+  let n=0;
+  for(const t of alvo){ try{ await db.ref('turnos/'+t.id).update({operador:normOp(t.operador)}); n++; }catch(e){} }
+  document.getElementById('padMsg').textContent='✅ '+n+' nome(s) padronizados.';
+}
+
+function renderTurnosTable(){
+  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let tbody=document.querySelector('#tblTurnos tbody');
+  tbody.innerHTML=sorted.map(t=>{
+    let c=compute(t); let nc=turnoConchas(t);
+    let temp=tempoFmt(tempoTurno(t));
+    let oleo=(t.oleo_consumido!=null&&t.oleo_consumido!=='')?Number(t.oleo_consumido).toFixed(0)
+      :(t.oleo_receb!=null&&t.oleo_receb!=='')?Number(t.oleo_receb).toFixed(0)
+      :(c.estimado&&isFinite(c.oleo)&&c.oleo>0)?'~'+c.oleo.toFixed(0)
+      :'';
+    return `<tr data-id="${t.id}">
+      <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
+      <td>${t.fornecedor_areia||''}</td><td>${c.m3u?c.m3u.toFixed(1):(t.m3_umida??'')}</td><td>${t.silo||''}</td>
+      <td>${nc||''}</td><td>${temp}</td><td>${oleo}</td>
+      <td>${c.lton?(c.estimado?'~':'')+c.lton.toFixed(2):'—'}</td>
+      <td class="obscol" title="${(t.obs||'').replace(/"/g,'&quot;')}">${(t.obs||'').slice(0,24)}${(t.obs||'').length>24?'…':''}</td>
+      <td><button class="btn" onclick="editTurno('${t.id}')">Editar</button><button class="btn danger" onclick="delEntry('turnos','${t.id}')">Excluir</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="12" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+}
+
+function renderRecebTable(){
+  let sorted=recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
+  let tbody=document.querySelector('#tblReceb tbody');
+  function tst(v){ if(!v)return ''; return v==='Aprovado'?'<span style="color:var(--good)">✓ Aprov.</span>':'<span style="color:var(--danger)">✗ Reprov.</span>'; }
+  tbody.innerHTML=sorted.map(r=>`<tr data-id="${r.id}">
+      <td>${formatDate(r.data)}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
+      <td>${(Number(r.depois)-Number(r.antes)).toFixed(0)}</td>
+      <td>${r.preco_litro!=null?('R$ '+Number(r.preco_litro).toFixed(2)):''}</td>
+      <td>${tst(r.teste_combustao)}</td><td>${tst(r.teste_agua)}</td>
+      <td>${r.fornecedor||''}</td><td>${r.recebedor||''}</td>
+      <td><button class="btn" onclick="editReceb('${r.id}')">Editar</button><button class="btn danger" onclick="delEntry('recebimentos','${r.id}')">Excluir</button></td>
+    </tr>`).join('') || '<tr><td colspan="11" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+}
+
+function delEntry(path,id){
+  if(!confirm('Excluir este registro? Essa ação não pode ser desfeita.'))return;
+  db.ref(path+'/'+id).remove().catch(e=>alert('Erro ao excluir: '+e.message));
+}
+
+function editTurno(id){
+  let t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
+  let opCanon=normOp(t.operador); let opIsKnown=OPERADORES.includes(opCanon);
+  row.innerHTML=`
+    <td><input class="edit" type="date" value="${t.data}" data-f="data"></td>
+    <td><input class="edit" value="${t.turno||''}" data-f="turno"></td>
+    <td>
+      <div class="chip-group-mini" id="opChips_${id}">
+        ${OPERADORES.map(o=>`<button type="button" class="chip-mini${opIsKnown&&opCanon===o?' active':''}" data-val="${o}">${o}</button>`).join('')}
+        <button type="button" class="chip-mini${opIsKnown?'':' active'}" data-val="__outro__">Outro</button>
+      </div>
+      <input type="hidden" id="opVal_${id}" data-f="operador" value="${opIsKnown?opCanon:(t.operador||'')}">
+      <input class="edit wide" id="opOutro_${id}" placeholder="Nome" style="margin-top:4px;${opIsKnown?'display:none;':''}" value="${opIsKnown?'':(t.operador||'')}">
+    </td>
+    <td><input class="edit" value="${t.fornecedor_areia||''}" data-f="fornecedor_areia"></td>
+    <td><input class="edit" type="number" step="0.1" value="${t.m3_umida??''}" data-f="m3_umida"></td>
+    <td><input class="edit wide" value="${t.silo||''}" data-f="silo"></td>
+    <td><input class="edit" type="number" value="${turnoConchas(t)||''}" data-f="conchas"></td>
+    <td>—</td>
+    <td><input class="edit" type="number" value="${t.oleo_consumido??t.oleo_receb??''}" data-f="oleo_consumido"></td>
+    <td>—</td>
+    <td><input class="edit wide" value="${(t.obs||'').replace(/"/g,'&quot;')}" data-f="obs"></td>
+    <td><button class="btn primary" onclick="saveTurno('${id}')">Salvar</button><button class="btn" onclick="renderTurnosTable()">Cancelar</button></td>
+  `;
+  document.querySelectorAll(`#opChips_${id} .chip-mini`).forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      document.querySelectorAll(`#opChips_${id} .chip-mini`).forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      let val=chip.dataset.val, hidden=document.getElementById(`opVal_${id}`), outro=document.getElementById(`opOutro_${id}`);
+      if(val==='__outro__'){ outro.style.display='block'; hidden.value=outro.value; outro.focus(); }
+      else { outro.style.display='none'; hidden.value=val; }
+    });
+  });
+  document.getElementById(`opOutro_${id}`).addEventListener('input',e=>{ document.getElementById(`opVal_${id}`).value=e.target.value; });
+}
+
+function saveTurno(id){
+  let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
+  let updates={};
+  row.querySelectorAll('input[data-f]').forEach(inp=>{
+    let f=inp.dataset.f;
+    updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
+  });
+  if(updates.conchas!==undefined&&!isNaN(updates.conchas)){ updates.m3_umida=+(Number(updates.conchas)*conchaM3()).toFixed(1); }
+  db.ref('turnos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
+}
+
+function editReceb(id){
+  let r=recebimentos.find(x=>x.id===id);
+  if(!r)return;
+  let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
+  let isKnown=FORNECEDORES.includes(r.fornecedor);
+  row.innerHTML=`
+    <td><input class="edit" type="date" value="${r.data}" data-f="data"></td>
+    <td><input class="edit" type="time" value="${r.hora||''}" data-f="hora"></td>
+    <td><input class="edit" type="number" value="${r.antes??''}" data-f="antes"></td>
+    <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
+    <td>—</td>
+    <td><input class="edit" type="number" step="0.01" value="${r.preco_litro??''}" data-f="preco_litro"></td>
+    <td>
+      <div class="chip-group-mini" data-testgroup="teste_combustao">
+        <button type="button" class="chip-mini tst-ok${r.teste_combustao==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
+        <button type="button" class="chip-mini tst-no${r.teste_combustao==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
+      </div>
+      <input type="hidden" data-f="teste_combustao" value="${r.teste_combustao||''}">
+    </td>
+    <td>
+      <div class="chip-group-mini" data-testgroup="teste_agua">
+        <button type="button" class="chip-mini tst-ok${r.teste_agua==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
+        <button type="button" class="chip-mini tst-no${r.teste_agua==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
+      </div>
+      <input type="hidden" data-f="teste_agua" value="${r.teste_agua||''}">
+    </td>
+    <td>
+      <div class="chip-group-mini" id="fornChips_${id}">
+        ${FORNECEDORES.map(f=>`<button type="button" class="chip-mini${r.fornecedor===f?' active':''}" data-val="${f}">${f}</button>`).join('')}
+        <button type="button" class="chip-mini${!isKnown?' active':''}" data-val="__outro__">Outro</button>
+      </div>
+      <input type="hidden" id="fornVal_${id}" value="${isKnown?r.fornecedor:'__outro__'}">
+      <input class="edit wide" id="fornOutro_${id}" placeholder="Nome" style="margin-top:4px;${isKnown?'display:none;':''}" value="${!isKnown?(r.fornecedor||''):''}">
+    </td>
+    <td><input class="edit wide" value="${r.recebedor||''}" data-f="recebedor"></td>
+    <td><button class="btn primary" onclick="saveReceb('${id}')">Salvar</button><button class="btn" onclick="renderRecebTable()">Cancelar</button></td>
+  `;
+  document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      let val=chip.dataset.val;
+      let hidden=document.getElementById(`fornVal_${id}`);
+      let outroInput=document.getElementById(`fornOutro_${id}`);
+      if(val==='__outro__'){
+        outroInput.style.display='block';
+        hidden.value=outroInput.value;
+        outroInput.focus();
+      }else{
+        outroInput.style.display='none';
+        hidden.value=val;
+      }
+    });
+  });
+  document.getElementById(`fornOutro_${id}`).addEventListener('input',e=>{
+    document.getElementById(`fornVal_${id}`).value=e.target.value;
+  });
+  row.querySelectorAll('[data-testgroup]').forEach(g=>{
+    let hid=g.parentElement.querySelector(`input[data-f="${g.dataset.testgroup}"]`);
+    g.querySelectorAll('.chip-mini').forEach(chip=>{
+      chip.addEventListener('click',()=>{
+        let already=chip.classList.contains('active');
+        g.querySelectorAll('.chip-mini').forEach(c=>c.classList.remove('active'));
+        if(already){ hid.value=''; }
+        else { chip.classList.add('active'); hid.value=chip.dataset.val; }
+      });
+    });
+  });
+}
+
+function saveReceb(id){
+  let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
+  let updates={};
+  row.querySelectorAll('input[data-f]').forEach(inp=>{
+    let f=inp.dataset.f;
+    updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
+  });
+  updates.fornecedor=document.getElementById(`fornVal_${id}`).value;
+  db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
+}
+</script>
+</body>
+</html>

@@ -9,18 +9,8 @@
   "background_color": "#FFFFFF",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "https://raw.githubusercontent.com/jorgeguill/AREIA-OLEO/45d6b8028fd8a8cc96d18fb33792bfa89a1ecf5c/painel-forno-COMPLETO-SYNC/icon-admin-192.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/jorgeguill/AREIA-OLEO/45d6b8028fd8a8cc96d18fb33792bfa89a1ecf5c/painel-forno-COMPLETO-SYNC/icon-admin-512.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any"
-    }
+    { "src": "/icon-admin-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-admin-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ],
   "categories": ["productivity"]
 }

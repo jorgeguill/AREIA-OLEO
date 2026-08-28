@@ -2,6 +2,7 @@
   "name": "Painel do Forno — Secagem de Areia",
   "short_name": "Painel Forno",
   "description": "Controle de areia seca (m³ úmida → seca automático) e consumo de óleo queimado.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -504,5 +504,6 @@ function renderRecebTable(){
     </tr>`).join('') || '<tr><td colspan="10" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
 }
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 </body>
 </html>

@@ -639,5 +639,6 @@ function saveReceb(id){
   db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
 }
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 </body>
 </html>

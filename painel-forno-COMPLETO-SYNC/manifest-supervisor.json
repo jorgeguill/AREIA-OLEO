@@ -1,0 +1,26 @@
+{
+  "name": "Painel Forno — Supervisor",
+  "short_name": "Forno Superv.",
+  "description": "Painel do supervisor (somente leitura): gráficos e indicadores da secagem de areia / óleo.",
+  "start_url": "/supervisor-5143484a.html",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#12151A",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/jorgeguill/AREIA-OLEO/45d6b8028fd8a8cc96d18fb33792bfa89a1ecf5c/painel-forno-COMPLETO-SYNC/icon-supervisor-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/jorgeguill/AREIA-OLEO/45d6b8028fd8a8cc96d18fb33792bfa89a1ecf5c/painel-forno-COMPLETO-SYNC/icon-supervisor-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity"]
+}

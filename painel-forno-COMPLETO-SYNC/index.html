@@ -171,8 +171,9 @@ section{margin-top:22px;}
     <button type="button" class="lote-add" id="btnAddLote">+ Adicionar lote</button>
     <div class="lotes-resumo"><span id="rzLotes">0 lotes · 0 conchas</span><span class="rz-m3"><b id="rzM3">0.0</b> m³ úmida</span></div>
 
-    <div class="subhead" id="turnoFuelHead">Gás (opcional)</div>
-    <div class="hint" style="margin-top:0;" id="turnoFuelHint">Se não souber o consumo, deixe em branco — o app estima pela média de combustível recebido ÷ areia processada.</div>
+    <div class="subhead">Combustível do turno</div>
+    <div class="field"><div class="chip-group" id="turnoCombChips"><button type="button" class="chip" data-val="gas">Gás (kg)</button><button type="button" class="chip" data-val="oleo">Óleo (L)</button></div><input type="hidden" name="turno_combustivel"></div>
+    <div class="hint" style="margin-top:0;" id="turnoFuelHint">Lance o consumo do combustível neste turno. Em branco = o app estima pela média (combustível ÷ areia processada).</div>
     <div class="field"><label id="turnoFuelLabel">Gás consumido no turno (kg)</label><input type="number" step="1" min="0" id="fuelTurnoInput" placeholder="deixe em branco = média automática"></div>
     <div class="field" id="recebInfoWrap" style="margin-top:-4px;"><label id="recebInfoLabel">Gás recebido neste dia (automático)</label><input type="text" id="recebInfo" readonly value="0 kg"></div>
 
@@ -276,14 +277,18 @@ function mediaLton(comb){
 }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
-  let comb=null, oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade do combustível (L ou kg)
-  if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
-  else {
-    let q=0,om=false;
+  let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
+  let oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
+  function lerOleo(){ let q=0,om=false;
     if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }
     if(t.oleo_receb){ q+=Number(t.oleo_receb); om=true; }
     if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ q+=Number(t.oleo_consumido); om=true; }
-    if(om){ comb='oleo'; oleo=q; medido=true; }
+    return {q,om}; }
+  if(comb==='gas'){ if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ oleo=Number(t.gas_kg); medido=true; } }
+  else if(comb==='oleo'){ let r=lerOleo(); if(r.om){ oleo=r.q; medido=true; } }
+  else {
+    if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
+    else { let r=lerOleo(); if(r.om){ comb='oleo'; oleo=r.q; medido=true; } }
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
@@ -321,7 +326,7 @@ function render(){
   document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);
   let list=document.getElementById('recentList'), html='';
-  turnos.slice(-8).reverse().forEach(t=>{ let cc=compute(t); let nl=(Array.isArray(t.lotes)?t.lotes.length:(t.lotes_no_turno||0)); let ncc=turnoConchas(t); let extra=ncc?` • ${ncc} conchas`+(nl?` / ${nl} lotes`:''):''; let org=t.fornecedor_areia?` • ${t.fornecedor_areia}`:''; html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno||''} • ${t.operador||'—'}</div><div class="entry-sub">${formatDate(t.data)} • Silo ${t.silo||'—'}${org}${extra}</div></div><div class="entry-val">${cc.lton?(cc.estimado?'~':'')+cc.lton.toFixed(2):'—'}</div></div>`; });
+  turnos.slice(-8).reverse().forEach(t=>{ let cc=compute(t); let nl=(Array.isArray(t.lotes)?t.lotes.length:(t.lotes_no_turno||0)); let ncc=turnoConchas(t); let extra=ncc?` • ${ncc} conchas`+(nl?` / ${nl} lotes`:''):''; let org=t.fornecedor_areia?` • ${t.fornecedor_areia}`:''; html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno||''} • ${t.operador||'—'}</div><div class="entry-sub">${formatDate(t.data)} • Silo ${t.silo||'—'}${org}${extra}</div></div><div class="entry-val">${cc.lton?(cc.estimado?'~':'')+cc.lton.toFixed(2)+' '+unidadeCons(cc.comb):'—'}</div></div>`; });
   let rs=state.recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   rs.slice(-5).reverse().forEach(r=>{ html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor||'—'}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora||''}</div></div><div class="entry-val">+${recebQtd(r).toFixed(0)}${unidadeComb(recebComb(r))}</div></div>`; });
   list.innerHTML=html||'<div style="padding:8px;color:var(--muted);font-size:12px;">Sem registros</div>';
@@ -349,16 +354,18 @@ document.querySelectorAll('#origemChips .chip').forEach(chip=>{ chip.addEventLis
 function updateSiloHidden(){ let vals=[...document.querySelectorAll('#siloChips .chip.active')].map(c=>c.dataset.val).sort(); document.querySelector('#formTurno [name=silo]').value=vals.join(', '); }
 document.querySelectorAll('#siloChips .chip').forEach(chip=>{ chip.addEventListener('click',()=>{ chip.classList.toggle('active'); updateSiloHidden(); }); });
 
-function updateRecebidoAuto(){ let data=document.querySelector('#formTurno [name=data]').value; let ua=combustivelAtual(); let total=state.recebimentos.filter(r=>r.data===data&&recebComb(r)===ua).reduce((s,r)=>s+recebQtd(r),0); document.getElementById('recebInfo').value=total.toFixed(0)+' '+unidadeComb(ua); }
-// Rótulos do campo de combustível do turno seguem o combustível atual (gás por padrão)
-function applyTurnoFuelLabels(){
-  let ua=combustivelAtual(), ehGas=ua==='gas', u=unidadeComb(ua);
-  let nome=ehGas?'Gás':'Óleo';
-  document.getElementById('turnoFuelHead').textContent=nome+' (opcional)';
-  document.getElementById('turnoFuelHint').textContent='Se não souber o consumo, deixe em branco — o app estima pela média de '+nome.toLowerCase()+' recebido ÷ areia processada.';
+function updateRecebidoAuto(){ let data=document.querySelector('#formTurno [name=data]').value; let el=document.querySelector('#formTurno [name=turno_combustivel]'); let uf=(el&&el.value)||combustivelAtual(); let total=state.recebimentos.filter(r=>r.data===data&&recebComb(r)===uf).reduce((s,r)=>s+recebQtd(r),0); document.getElementById('recebInfo').value=total.toFixed(0)+' '+unidadeComb(uf); }
+// Seletor de combustível do turno (Gás/Óleo) — o operador escolhe e lança o consumo em kg (gás) ou L (óleo)
+function setTurnoComb(fuel){
+  fuel=(fuel==='oleo')?'oleo':'gas';
+  document.querySelector('#formTurno [name=turno_combustivel]').value=fuel;
+  document.querySelectorAll('#turnoCombChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===fuel));
+  let nome=fuel==='gas'?'Gás':'Óleo', u=unidadeComb(fuel);
   document.getElementById('turnoFuelLabel').textContent=nome+' consumido no turno ('+u+')';
   document.getElementById('recebInfoLabel').textContent=nome+' recebido neste dia (automático)';
+  updateRecebidoAuto();
 }
+document.querySelectorAll('#turnoCombChips .chip').forEach(chip=>{ chip.addEventListener('click',()=>setTurnoComb(chip.dataset.val)); });
 // ===== Abastecimento: seletor de combustível e fornecedores =====
 const FORN_GAS=["Copa Energia"], FORN_OLEO=["Madalena","José William","Eugênia","Emanuel","Walk"];
 function setFornecedorChips(fuel){
@@ -380,7 +387,7 @@ function setRecebFuel(fuel){
 }
 document.querySelectorAll('#combChipsReceb .chip').forEach(chip=>{ chip.addEventListener('click',()=>setRecebFuel(chip.dataset.val)); });
 
-document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); document.getElementById('fuelTurnoInput').value=''; applyTurnoFuelLabels(); updateRecebidoAuto(); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
+document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); document.getElementById('fuelTurnoInput').value=''; setTurnoComb(combustivelAtual()); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 document.querySelector('#formTurno [name=data]').addEventListener('change',updateRecebidoAuto);
 document.getElementById('btnAddLote').addEventListener('click',addLote);
 
@@ -409,7 +416,7 @@ document.getElementById('formTurno').addEventListener('submit',e=>{
   let m3u=+(tc*conchaM3()).toFixed(1);
   let tempoTotal=ll.reduce((s,l)=>s+(l.tempo_min||0),0);
   let entry={data:f.data.value,turno:f.turno.value,operador:f.operador.value,fornecedor_areia:f.fornecedor_areia.value,silo:f.silo.value,lotes:ll,conchas:tc,m3_umida:m3u,tempo_secagem_min:tempoTotal,origem:'app'};
-  { let fv=document.getElementById('fuelTurnoInput').value; if(fv!==''){ if(combustivelAtual()==='gas') entry.gas_kg=Number(fv); else entry.oleo_consumido=Number(fv); } }
+  { let uf=f.turno_combustivel.value||combustivelAtual(); entry.combustivel=uf; let fv=document.getElementById('fuelTurnoInput').value; if(fv!==''){ if(uf==='gas') entry.gas_kg=Number(fv); else entry.oleo_consumido=Number(fv); } }
   if(f.obs.value.trim()) entry.obs=f.obs.value.trim();
   addEntry(TURNOS,entry);
   close();

@@ -223,7 +223,9 @@ function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.p
 function unidadeComb(c){ return c==='gas'?'kg':'L'; }
 function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
-function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel&&r.data>=VIGENCIA_GAS).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+// combustível em uso na data: o do abastecimento mais recente até essa data (padrão óleo, p/ legado antigo)
+function combDaData(data){ let rs=recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
 function inicioPeriodoComb(comb){ let ds=recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
 function mediaLton(comb){
   comb=comb||combustivelAtual();
@@ -244,7 +246,7 @@ function compute(t){
     if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ q+=Number(t.oleo_consumido); om=true; }
     if(om){ comb='oleo'; oleo=q; medido=true; }
   }
-  if(!comb){ comb=(t.data&&t.data>=VIGENCIA_GAS)?'gas':'oleo'; }
+  if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){ let m=mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }

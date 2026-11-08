@@ -216,7 +216,7 @@ function tempoMinLote(ini,fim){ if(!ini||!fim)return null; let a=String(ini).spl
 function tempoTurno(t){ let lotes=Array.isArray(t.lotes)?t.lotes:[]; let sum=0,has=false; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ sum+=m; has=true; } }); if(has)return sum; if(t.tempo_secagem_min!=null&&isFinite(t.tempo_secagem_min)&&Number(t.tempo_secagem_min)>0)return Number(t.tempo_secagem_min); return null; }
 function tempoFmt(min){ if(min==null||isNaN(min))return ''; let h=Math.floor(min/60),m=min%60; return h?`${h}h${m?(' '+m+'m'):''}`:`${m}m`; }
 // ===== Combustível (dual: gás em kg / óleo em L) =====
-const VIGENCIA_GAS='2026-10-01';
+const VIGENCIA_GAS='2026-09-16';
 function recebComb(r){ return (r&&r.combustivel)||'oleo'; }
 function recebQtd(r){ if(!r)return 0; if(recebComb(r)==='gas') return Number(r.kg)||0; return (Number(r.depois)-Number(r.antes))||0; }
 function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.preco_kg):Number(r.preco_litro); return (isFinite(p)&&p>0)?p:null; }

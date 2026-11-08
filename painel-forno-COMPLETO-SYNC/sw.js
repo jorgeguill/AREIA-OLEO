@@ -1,4 +1,4 @@
-const CACHE_NAME = 'painel-forno-v7';
+const CACHE_NAME = 'painel-forno-v8';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

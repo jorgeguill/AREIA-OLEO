@@ -55,7 +55,7 @@
 3. Configure:
    - **Umidade bruta:** % de água na areia (padrão: 8%)
    - **Densidade seca:** ton/m³ (padrão: 1.5)
-   - **Meta L/ton:** sua meta (padrão: 8)
+   - **Meta kg/ton:** sua meta de gás (padrão: 5)
    - **Tolerância:** % acima da meta (padrão: 15%)
 4. Clique "Salvar"
 
@@ -64,10 +64,10 @@
 1. **Registrar Turno:**
    - Data, turno, operador
    - m³ úmida que passou no elevador
-   - Óleo: litros início e fim
-   - App calcula automaticamente L/ton
+   - Gás consumido no turno em kg (opcional — até instalar o medidor, deixe em branco)
+   - App calcula automaticamente kg/ton
 
-2. **Recebimento:** registra descarga de óleo (opcional)
+2. **Abastecimento de gás:** lance a nota fiscal (kg + R$) a cada chegada no tonel. O óleo continua disponível no seletor (caso volte a ser usado).
 
 3. **Histórico:** últimos turnos aparecem na lista
 

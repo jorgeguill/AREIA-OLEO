@@ -237,14 +237,18 @@ function mediaLton(comb){
 function precoMedio(comb){ comb=comb||combustivelAtual(); let s=0,l=0; recebimentos.forEach(r=>{ if(recebComb(r)!==comb)return; let p=recebPreco(r), q=recebQtd(r); if(p&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:precoPadrao(comb); }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
-  let comb=null, oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
-  if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
-  else {
-    let q=0,om=false;
+  let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
+  let oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
+  function lerOleo(){ let q=0,om=false;
     if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }
     if(t.oleo_receb){ q+=Number(t.oleo_receb); om=true; }
     if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ q+=Number(t.oleo_consumido); om=true; }
-    if(om){ comb='oleo'; oleo=q; medido=true; }
+    return {q,om}; }
+  if(comb==='gas'){ if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ oleo=Number(t.gas_kg); medido=true; } }
+  else if(comb==='oleo'){ let r=lerOleo(); if(r.om){ oleo=r.q; medido=true; } }
+  else {
+    if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
+    else { let r=lerOleo(); if(r.om){ comb='oleo'; oleo=r.q; medido=true; } }
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
@@ -530,8 +534,8 @@ function renderTurnosTable(){
     return `<tr data-id="${t.id}">
       <td>${formatDate(t.data)}</td><td>${t.turno||''}</td><td>${t.operador||''}</td>
       <td>${t.fornecedor_areia||''}</td><td>${c.m3u?c.m3u.toFixed(1):(t.m3_umida??'')}</td><td>${t.silo||''}</td>
-      <td>${nc||''}</td><td>${temp}</td><td>${oleo}</td>
-      <td>${c.lton?(c.estimado?'~':'')+c.lton.toFixed(2):'—'}</td>
+      <td>${nc||''}</td><td>${temp}</td><td>${oleo?oleo+' '+unidadeComb(c.comb):''}</td>
+      <td>${c.lton?(c.estimado?'~':'')+c.lton.toFixed(2)+' '+unidadeCons(c.comb):'—'}</td>
       <td class="obscol" title="${(t.obs||'').replace(/"/g,'&quot;')}">${(t.obs||'').slice(0,24)}${(t.obs||'').length>24?'…':''}</td>
       <td><button class="btn" onclick="editTurno('${t.id}')">Editar</button><button class="btn danger" onclick="delEntry('turnos','${t.id}')">Excluir</button></td>
     </tr>`;

@@ -249,6 +249,14 @@ function mediaLton(comb){
   let ton=turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
   return ton>0?qtd/ton:0;
 }
+// Média do PERÍODO filtrado = Σ qtd recebida (combustível) ÷ Σ ton produzida (turnos daquele combustível) no período.
+// Sem nota no período, cai para a média global (mediaLton) para não ficar em branco.
+function mediaPeriodo(comb){
+  comb=comb||combEmFoco();
+  let qtd=recebF().filter(r=>recebComb(r)===comb).reduce((s,r)=>s+recebQtd(r),0);
+  let ton=turnosF().filter(t=>t&&t.data&&compute(t).comb===comb).reduce((s,t)=>s+tonOf(t).ton,0);
+  return (ton>0&&qtd>0)?qtd/ton:mediaLton(comb);
+}
 function precoMedio(comb){ comb=comb||combustivelAtual(); let s=0,l=0; recebimentos.forEach(r=>{ if(recebComb(r)!==comb)return; let p=recebPreco(r), q=recebQtd(r); if(p&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:precoPadrao(comb); }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
@@ -458,7 +466,7 @@ function renderStats(){
 
   let _ua=combEmFoco();
   let ltons=computed.filter(c=>c.comb===_ua).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
-  let media=ltons.length?(ltons.reduce((a,b)=>a+b,0)/ltons.length):0;
+  let media=mediaPeriodo(_ua);
   document.getElementById('statMedia').textContent=media?media.toFixed(2):'—';
 
   let totalOleo=recebimentos.filter(r=>recebComb(r)===_ua).reduce((s,r)=>s+recebQtd(r),0);

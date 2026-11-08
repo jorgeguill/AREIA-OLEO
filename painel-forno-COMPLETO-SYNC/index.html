@@ -264,8 +264,10 @@ function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
 // combustível atual = o do abastecimento mais recente (padrão gás, pois a mudança atual é para gás)
 function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+// Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
+const OLEO_ATE='2026-09-15';
 // combustível em uso na data: o do abastecimento mais recente até essa data (padrão óleo, p/ legado antigo)
-function combDaData(data){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
+function combDaData(data){ if(data&&data<OLEO_ATE) return 'oleo'; let rs=state.recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
 function inicioPeriodoComb(comb){ let ds=state.recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
 // média de consumo do combustível: qtd do combustível ÷ ton seca desde o 1º abastecimento dele (nunca mistura L com kg)
 function mediaLton(comb){

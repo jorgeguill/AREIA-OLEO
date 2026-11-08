@@ -227,8 +227,20 @@ function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
 function combLabel(c){ return c==='gas'?'gás':'óleo'; }
 function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+// Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
+const OLEO_ATE='2026-09-15';
 // combustível em uso na data: o do abastecimento mais recente até essa data (padrão óleo, p/ legado antigo)
-function combDaData(data){ let rs=recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
+function combDaData(data){ if(data&&data<OLEO_ATE) return 'oleo'; let rs=recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
+// combustível "em foco" = o do PERÍODO filtrado (não o global). Sem filtro, segue o atual.
+function combEmFoco(){
+  if(!mesFiltro) return combustivelAtual();
+  let ts=turnosF().filter(t=>t&&t.data);
+  if(!ts.length) return combustivelAtual();
+  let cnt={gas:0,oleo:0};
+  ts.forEach(t=>{ let c=compute(t).comb; if(c==='gas'||c==='oleo') cnt[c]++; });
+  if(!cnt.gas&&!cnt.oleo) return combustivelAtual();
+  return cnt.gas>=cnt.oleo?'gas':'oleo';
+}
 function inicioPeriodoComb(comb){ let ds=recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
 function mediaLton(comb){
   comb=comb||combustivelAtual();
@@ -260,7 +272,7 @@ function compute(t){
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
 function aplicaRotulos(){
-  let ua=combustivelAtual(), uc=unidadeCons(ua), u=unidadeComb(ua), nome=combLabel(ua), Nome=nome.charAt(0).toUpperCase()+nome.slice(1);
+  let ua=combEmFoco(), uc=unidadeCons(ua), u=unidadeComb(ua), nome=combLabel(ua), Nome=nome.charAt(0).toUpperCase()+nome.slice(1);
   let set=(id,txt)=>{ let e=document.getElementById(id); if(e)e.textContent=txt; };
   set('lblCustoSec','Custo do '+nome);
   set('lblAbastSec','Abastecimento de '+nome);
@@ -312,7 +324,7 @@ function fillMesSel(){
   sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
   sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
 }
-document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; aplicaRotulos(); renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
 
 function renderAll(){
   aplicaRotulos();
@@ -338,7 +350,7 @@ function renderComparativos(){
   let ops=Object.keys(po).filter(o=>po[o].h>0).sort((a,b)=>(po[b].ton/po[b].h)-(po[a].ton/po[a].h));
   drawBar('chartProd',ops,ops.map(o=>+(po[o].ton/po[o].h).toFixed(2)),'#8ac6a0');
   let orig={};
-  let _ua=combustivelAtual();
+  let _ua=combEmFoco();
   turnos.forEach(t=>{ let o=((t.fornecedor_areia||'').trim())||'—'; let c=compute(t); if(c.comb!==_ua)return; if(!orig[o])orig[o]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){orig[o].s+=c.lton;orig[o].n++;} });
   let ok=Object.keys(orig).filter(o=>orig[o].n>0).sort((a,b)=>(orig[a].s/orig[a].n)-(orig[b].s/orig[b].n));
   drawBar('chartOrigem',ok,ok.map(o=>+(orig[o].s/orig[o].n).toFixed(2)),'#E8A33D');
@@ -348,7 +360,7 @@ function renderComparativos(){
   drawBar('chartTurno',tk,tk.map(x=>+(tt[x].s/tt[x].n).toFixed(2)),'#7aa7d9');
 }
 function renderTendencia(){
-  let UA=combustivelAtual(), UC=unidadeCons(UA), pm=precoMedio(UA), byM={};
+  let UA=combEmFoco(), UC=unidadeCons(UA), pm=precoMedio(UA), byM={};
   turnos.forEach(t=>{ let m=mesDe(t.data); if(!m)return; let c=compute(t); if(c.comb!==UA)return; if(!byM[m])byM[m]={s:0,n:0,ton:0,oleo:0}; if(c.lton&&isFinite(c.lton)){byM[m].s+=c.lton;byM[m].n++;} byM[m].ton+=c.ton||0; byM[m].oleo+=(isFinite(c.oleo)?c.oleo:0); });
   let ms=Object.keys(byM).sort(), labels=ms.map(mesLabel);
   if(_charts.chartTendLton)_charts.chartTendLton.destroy();
@@ -361,7 +373,7 @@ function brl(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionD
 function brl0(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
 // precoMedio() dual-combustível está definido no topo (com os helpers de combustível)
 function renderCusto(){
-  const turnos=turnosF(); let ua=combustivelAtual(); let pm=precoMedio(ua); let ton=0,m3=0,oleo=0;
+  const turnos=turnosF(); let ua=combEmFoco(); let pm=precoMedio(ua); let ton=0,m3=0,oleo=0;
   turnos.forEach(t=>{ let c=compute(t); if(c.comb!==ua)return; ton+=c.ton||0; m3+=c.m3u||0; oleo+=(isFinite(c.oleo)?c.oleo:0); });
   let custo=oleo*pm;
   _set('custoPreco',brl(pm));
@@ -370,7 +382,7 @@ function renderCusto(){
   _set('custoM3',m3>0?brl(custo/m3):'—');
 }
 function renderOleoSupply(){
-  let ua=combustivelAtual(), u=unidadeComb(ua), nome=combLabel(ua);
+  let ua=combEmFoco(), u=unidadeComb(ua), nome=combLabel(ua);
   let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let al=document.getElementById('oleoAlerta');
   let totalRec=recebimentos.filter(r=>recebComb(r)===ua).reduce((s,r)=>s+(recebQtd(r)||0),0);
@@ -422,7 +434,7 @@ function normOp(o){
 function renderColab(){
   const turnos=turnosF();
   let porOp={};
-  let _uaC=combustivelAtual();
+  let _uaC=combEmFoco();
   turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)&&c.comb===_uaC){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
   let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
   if(chartColabAreia)chartColabAreia.destroy();
@@ -444,7 +456,7 @@ function renderStats(){
   document.getElementById('statAreiaTotal').textContent=areiaTotal.toFixed(1);
   document.getElementById('statTonSeca').textContent=tonSecaTotal.toFixed(1);
 
-  let _ua=combustivelAtual();
+  let _ua=combEmFoco();
   let ltons=computed.filter(c=>c.comb===_ua).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
   let media=ltons.length?(ltons.reduce((a,b)=>a+b,0)/ltons.length):0;
   document.getElementById('statMedia').textContent=media?media.toFixed(2):'—';
@@ -487,7 +499,7 @@ function renderCharts(){
   const turnos=turnosF(), recebimentos=recebF();
   let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
-  let UA=combustivelAtual(), UC=unidadeCons(UA), U=unidadeComb(UA);
+  let UA=combEmFoco(), UC=unidadeCons(UA), U=unidadeComb(UA);
   let ltonData=sorted.map(t=>{let c=compute(t);return (c.comb===UA&&c.lton)?+c.lton.toFixed(2):null;});
   let metaLine=sorted.map(()=>cfg.meta);
 

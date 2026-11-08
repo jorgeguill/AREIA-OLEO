@@ -114,14 +114,14 @@ section{margin-top:22px;}
 <main>
   <div id="alertBox"></div>
   <div class="hero">
-    <div style="font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Consumo — L/ton</div>
+    <div id="gaugeTitle" style="font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Consumo — kg/ton</div>
     <div class="gauge-wrap">
       <div class="gauge-track" id="gaugeTrack"></div>
       <div class="gauge-needle" id="needle"></div>
       <div class="gauge-hub"></div>
       <div class="gauge-center">
         <div class="gauge-value mono" id="gaugeVal">—</div>
-        <div class="gauge-unit">L/TON</div>
+        <div class="gauge-unit" id="gaugeUnit">KG/TON</div>
       </div>
     </div>
     <div class="gauge-legend">
@@ -171,10 +171,10 @@ section{margin-top:22px;}
     <button type="button" class="lote-add" id="btnAddLote">+ Adicionar lote</button>
     <div class="lotes-resumo"><span id="rzLotes">0 lotes · 0 conchas</span><span class="rz-m3"><b id="rzM3">0.0</b> m³ úmida</span></div>
 
-    <div class="subhead">Óleo (opcional)</div>
-    <div class="hint" style="margin-top:0;">Se não souber o consumo, deixe em branco — o app estima pela média de óleo recebido ÷ areia processada.</div>
-    <div class="field"><label>Óleo consumido no turno (L)</label><input type="number" step="1" min="0" name="oleo_consumido" placeholder="deixe em branco = média automática"></div>
-    <div class="field" id="recebInfoWrap" style="margin-top:-4px;"><label>Óleo recebido neste dia (automático)</label><input type="text" id="recebInfo" readonly value="0 L"></div>
+    <div class="subhead" id="turnoFuelHead">Gás (opcional)</div>
+    <div class="hint" style="margin-top:0;" id="turnoFuelHint">Se não souber o consumo, deixe em branco — o app estima pela média de combustível recebido ÷ areia processada.</div>
+    <div class="field"><label id="turnoFuelLabel">Gás consumido no turno (kg)</label><input type="number" step="1" min="0" id="fuelTurnoInput" placeholder="deixe em branco = média automática"></div>
+    <div class="field" id="recebInfoWrap" style="margin-top:-4px;"><label id="recebInfoLabel">Gás recebido neste dia (automático)</label><input type="text" id="recebInfo" readonly value="0 kg"></div>
 
     <div class="subhead">Observações</div>
     <div class="field"><label>Observações do turno</label><textarea name="obs" rows="2" placeholder="paradas, problemas, notas… (opcional)"></textarea></div>
@@ -185,19 +185,27 @@ section{margin-top:22px;}
 
 <div class="sheet" id="sheetReceb">
   <div class="sheet-handle"></div>
-  <h3>Recebimento de óleo</h3>
-  <div class="sub">Registro de descarga com fornecedor.</div>
+  <h3 id="recebTitle">Abastecimento de gás</h3>
+  <div class="sub">Lance pela nota fiscal a cada chegada de combustível no tonel.</div>
   <form id="formReceb">
+    <div class="field"><label>Combustível</label><div class="chip-group" id="combChipsReceb"><button type="button" class="chip" data-val="gas">Gás (kg)</button><button type="button" class="chip" data-val="oleo">Óleo (L)</button></div><input type="hidden" name="combustivel" value="gas"></div>
     <div class="row2"><div class="field"><label>Data</label><input type="date" name="data" required></div><div class="field"><label>Hora</label><input type="time" name="hora" required></div></div>
-    <div class="row2"><div class="field"><label>Antes (L)</label><input type="number" step="1" min="0" name="antes" required></div><div class="field"><label>Depois (L)</label><input type="number" step="1" min="0" name="depois" required></div></div>
-    <div class="field"><label>Preço por litro (R$)</label><input type="number" step="0.01" min="0" name="preco_litro" placeholder="opcional"></div>
+    <div id="gasFields">
+      <div class="row2"><div class="field"><label>Quantidade (kg)</label><input type="number" step="1" min="0" name="kg" placeholder="kg da nota"></div><div class="field"><label>Preço por kg (R$)</label><input type="number" step="0.01" min="0" name="preco_kg" placeholder="opcional"></div></div>
+    </div>
+    <div id="oleoFields" style="display:none;">
+      <div class="row2"><div class="field"><label>Antes (L)</label><input type="number" step="1" min="0" name="antes"></div><div class="field"><label>Depois (L)</label><input type="number" step="1" min="0" name="depois"></div></div>
+      <div class="field"><label>Preço por litro (R$)</label><input type="number" step="0.01" min="0" name="preco_litro" placeholder="opcional"></div>
+    </div>
     <div class="field"><label>Fornecedor</label><div class="chip-group" id="fornecedorChips"><button type="button" class="chip" data-val="Madalena">Madalena</button><button type="button" class="chip" data-val="José William">José William</button><button type="button" class="chip" data-val="Eugênia">Eugênia</button><button type="button" class="chip" data-val="Emanuel">Emanuel</button><button type="button" class="chip" data-val="Walk">Walk</button><button type="button" class="chip" data-val="__outro__">Outro</button></div><input type="hidden" name="fornecedor"></div>
     <div class="field" id="fornecedorOutroWrap" style="display:none;"><label>Nome do fornecedor</label><input type="text" id="fornecedorOutroInput" placeholder="Digite o nome"></div>
     <div class="field"><label>Recebedor</label><input type="text" name="recebedor" placeholder="Nome" required></div>
 
-    <div class="subhead">Testes de qualidade</div>
-    <div class="field"><label>Teste de combustão</label><div class="chip-group" id="combChips"><button type="button" class="chip ok" data-val="Aprovado">Aprovado</button><button type="button" class="chip no" data-val="Reprovado">Reprovado</button></div><input type="hidden" name="teste_combustao"></div>
-    <div class="field"><label>Teste de presença de água</label><div class="chip-group" id="aguaChips"><button type="button" class="chip ok" data-val="Aprovado">Aprovado</button><button type="button" class="chip no" data-val="Reprovado">Reprovado</button></div><input type="hidden" name="teste_agua"></div>
+    <div id="oleoTestes" style="display:none;">
+      <div class="subhead">Testes de qualidade (óleo)</div>
+      <div class="field"><label>Teste de combustão</label><div class="chip-group" id="combChips"><button type="button" class="chip ok" data-val="Aprovado">Aprovado</button><button type="button" class="chip no" data-val="Reprovado">Reprovado</button></div><input type="hidden" name="teste_combustao"></div>
+      <div class="field"><label>Teste de presença de água</label><div class="chip-group" id="aguaChips"><button type="button" class="chip ok" data-val="Aprovado">Aprovado</button><button type="button" class="chip no" data-val="Reprovado">Reprovado</button></div><input type="hidden" name="teste_agua"></div>
+    </div>
 
     <div class="sheet-actions"><button type="button" class="btn btn-secondary" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
   </form>
@@ -215,7 +223,7 @@ section{margin-top:22px;}
     <div class="hint">Se deixar em branco, usa localStorage (dados locais apenas).</div>
     <div class="subhead">Parâmetros da areia</div>
     <div class="row2"><div class="field"><label>Umidade bruta (%)</label><input type="number" step="0.1" min="0" max="50" name="umidade" value="8" required></div><div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" min="0.1" name="densidade" value="1.5" required></div></div>
-    <div class="row2"><div class="field"><label>m³ por concha</label><input type="number" step="0.01" min="0.1" name="concha_m3" value="2.1" required></div><div class="field"><label>Meta L/ton</label><input type="number" step="0.1" min="0.1" name="meta" value="8" required></div></div>
+    <div class="row2"><div class="field"><label>m³ por concha</label><input type="number" step="0.01" min="0.1" name="concha_m3" value="2.1" required></div><div class="field"><label>Meta kg/ton (gás)</label><input type="number" step="0.1" min="0.1" name="meta" value="5" required></div></div>
     <div class="field"><label>Tolerância (%)</label><input type="number" step="1" min="1" name="tolerancia" value="15" required></div>
     <div class="sheet-actions"><button type="button" class="btn btn-secondary" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
   </form>
@@ -223,7 +231,7 @@ section{margin-top:22px;}
 
 <script>
 const TURNOS="turnos",RECEB="recebimentos",CFG="cfg",PARAMS="parametros";
-const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:5,tolerancia:15,concha_m3:2.1};
 const OPERADORES=["Anailson","Livio","William","João Victor","Renato","Rafael"];
 let state={cfg:{...DEFAULT_CFG},turnos:[],recebimentos:[]};
 let firebaseDb=null,useFirebase=false;
@@ -245,39 +253,60 @@ function init(){ state.cfg={...DEFAULT_CFG,...load(CFG,{})}; state.turnos=load(T
 
 function turnoConchas(t){ if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0); return Number(t.conchas)||0; }
 function tonOf(t){ let m3u=Number(t.m3_umida); if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c)m3u=c*conchaM3(); } m3u=m3u||0; return {m3u,ton:m3u*(1-state.cfg.umidade/100)*state.cfg.densidade}; }
-// média L/ton = total óleo recebido ÷ total ton seca processada (histórico)
-function mediaLton(){
-  let litros=state.recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0);
-  let ton=state.turnos.reduce((s,t)=>s+tonOf(t).ton,0);
-  return ton>0?litros/ton:0;
+// ===== Combustível (dual: gás em kg / óleo em L) =====
+const VIGENCIA_GAS='2026-10-01';
+function recebComb(r){ return (r&&r.combustivel)||'oleo'; } // legado sem campo = óleo
+function recebQtd(r){ if(!r)return 0; if(recebComb(r)==='gas') return Number(r.kg)||0; return (Number(r.depois)-Number(r.antes))||0; }
+function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.preco_kg):Number(r.preco_litro); return (isFinite(p)&&p>0)?p:null; }
+function unidadeComb(c){ return c==='gas'?'kg':'L'; }
+function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
+function precoPadrao(c){ return c==='gas'?5.60:2.50; }
+// combustível atual = o do abastecimento mais recente (padrão gás, pois a mudança atual é para gás)
+function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.combustivel&&r.data>=VIGENCIA_GAS).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function inicioPeriodoComb(comb){ let ds=state.recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
+// média de consumo do combustível: qtd do combustível ÷ ton seca desde o 1º abastecimento dele (nunca mistura L com kg)
+function mediaLton(comb){
+  comb=comb||combustivelAtual();
+  let ini=inicioPeriodoComb(comb);
+  let qtd=state.recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
+  let ton=state.turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
+  return ton>0?qtd/ton:0;
 }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
-  let oleo=0, medido=false;
-  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim)); medido=true; }
-  if(t.oleo_receb){ oleo+=Number(t.oleo_receb); medido=true; }
-  if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
+  let comb=null, oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade do combustível (L ou kg)
+  if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
+  else {
+    let q=0,om=false;
+    if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }
+    if(t.oleo_receb){ q+=Number(t.oleo_receb); om=true; }
+    if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ q+=Number(t.oleo_consumido); om=true; }
+    if(om){ comb='oleo'; oleo=q; medido=true; }
+  }
+  if(!comb){ comb=(t.data&&t.data>=VIGENCIA_GAS)?'gas':'oleo'; }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
-  return{m3u,m3s,ton,oleo,lton,estimado};
+  else if(!lton&&ton>0.01){ let m=mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
 
 function formatDate(iso){ if(!iso)return ''; let [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; }
 function tempoMin(ini,fim){ if(!ini||!fim)return null; let a=ini.split(':').map(Number),b=fim.split(':').map(Number); let d=(b[0]*60+b[1])-(a[0]*60+a[1]); if(d<0)d+=1440; return d; }
 function tempoFmt(min){ if(min==null||isNaN(min))return '—'; let h=Math.floor(min/60),m=min%60; return h?`${h}h${m?(' '+m+'m'):''}`:`${m}m`; }
 
-function updateAlert(c){ if(document.querySelector('.status-dot').classList.contains('err'))return; let box=document.getElementById('alertBox'); if(!c.lton){box.innerHTML='';return;} let meta=state.cfg.meta,tol=state.cfg.tolerancia; let limite=meta*(1+tol/100); if(!c.estimado&&c.lton>limite){ box.innerHTML=`<div class="alert">⚠️ Consumo acima da meta: ${c.lton.toFixed(2)} L/ton (meta ${meta} ±${tol}%, limite ${limite.toFixed(2)} L/ton)</div>`; } else{ box.innerHTML=''; } }
+function updateAlert(c){ if(document.querySelector('.status-dot').classList.contains('err'))return; let box=document.getElementById('alertBox'); if(!c.lton){box.innerHTML='';return;} let meta=state.cfg.meta,tol=state.cfg.tolerancia; let limite=meta*(1+tol/100); if(!c.estimado&&c.lton>limite){ let uc=unidadeCons(c.comb); box.innerHTML=`<div class="alert">⚠️ Consumo acima da meta: ${c.lton.toFixed(2)} ${uc} (meta ${meta} ±${tol}%, limite ${limite.toFixed(2)} ${uc})</div>`; } else{ box.innerHTML=''; } }
 
 function render(){
   let turnos=state.turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let last=turnos[turnos.length-1],totU=0,totT=0;
   turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
   let c=last?compute(last):{lton:null};
-  let meta=state.cfg.meta||8,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
+  let UA=combustivelAtual(), UC=unidadeCons(UA), U=unidadeComb(UA);
+  { let gt=document.getElementById('gaugeTitle'); if(gt)gt.textContent='Consumo — '+UC; let gu=document.getElementById('gaugeUnit'); if(gu)gu.textContent=UC.toUpperCase(); }
+  let meta=state.cfg.meta||5,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
   // valor do medidor: último turno; se vier vazio, cai para a média geral (nunca fica em branco havendo dados)
   let gv=c.lton, gEst=c.estimado;
-  if(gv==null){ let m=mediaLton(); if(m>0){ gv=m; gEst=true; } }
+  if(gv==null){ let m=mediaLton(UA); if(m>0){ gv=m; gEst=true; } }
   let scaleMax=Math.max(meta*2.5,limite*1.2,(gv||0)*1.1);
   let goodDeg=Math.min(270,(meta/scaleMax)*270), amberDeg=Math.min(270,(limite/scaleMax)*270);
   document.getElementById('gaugeTrack').style.background=`conic-gradient(from -135deg, var(--good) 0deg ${goodDeg}deg, var(--amber) ${goodDeg}deg ${amberDeg}deg, var(--danger) ${amberDeg}deg 270deg)`;
@@ -285,14 +314,14 @@ function render(){
   let angle=gv!=null?-135+Math.min(270,(gv/scaleMax)*270):-135;
   document.getElementById('needle').style.transform=`translate(-50%,-100%) rotate(${angle}deg)`;
   let ctx=document.getElementById('gaugeCtx');
-  if(ctx){ if(gv==null){ ctx.textContent=`Meta ${meta} L/ton — sem dados ainda`; } else { ctx.textContent=`Meta ${meta} · limite ${limite.toFixed(1)} L/ton`+(last?` — último: ${last.turno||''} (${last.operador||'—'})`:'')+(gEst?' · estimado':''); } }
+  if(ctx){ if(gv==null){ ctx.textContent=`Meta ${meta} ${UC} — sem dados ainda`; } else { ctx.textContent=`Meta ${meta} · limite ${limite.toFixed(1)} ${UC}`+(last?` — último: ${last.turno||''} (${last.operador||'—'})`:'')+(gEst?' · estimado':''); } }
   document.getElementById('totalUmida').textContent=totU.toFixed(1);
   document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);
   let list=document.getElementById('recentList'), html='';
   turnos.slice(-8).reverse().forEach(t=>{ let cc=compute(t); let nl=(Array.isArray(t.lotes)?t.lotes.length:(t.lotes_no_turno||0)); let ncc=turnoConchas(t); let extra=ncc?` • ${ncc} conchas`+(nl?` / ${nl} lotes`:''):''; let org=t.fornecedor_areia?` • ${t.fornecedor_areia}`:''; html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno||''} • ${t.operador||'—'}</div><div class="entry-sub">${formatDate(t.data)} • Silo ${t.silo||'—'}${org}${extra}</div></div><div class="entry-val">${cc.lton?(cc.estimado?'~':'')+cc.lton.toFixed(2):'—'}</div></div>`; });
   let rs=state.recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
-  rs.slice(-5).reverse().forEach(r=>{ html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor||'—'}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora||''}</div></div><div class="entry-val">+${(Number(r.depois)-Number(r.antes)).toFixed(0)}L</div></div>`; });
+  rs.slice(-5).reverse().forEach(r=>{ html+=`<div class="entry"><div class="entry-dot receb"></div><div class="entry-main"><div class="entry-title">Receb • ${r.fornecedor||'—'}</div><div class="entry-sub">${formatDate(r.data)} ${r.hora||''}</div></div><div class="entry-val">+${recebQtd(r).toFixed(0)}${unidadeComb(recebComb(r))}</div></div>`; });
   list.innerHTML=html||'<div style="padding:8px;color:var(--muted);font-size:12px;">Sem registros</div>';
 }
 
@@ -318,21 +347,49 @@ document.querySelectorAll('#origemChips .chip').forEach(chip=>{ chip.addEventLis
 function updateSiloHidden(){ let vals=[...document.querySelectorAll('#siloChips .chip.active')].map(c=>c.dataset.val).sort(); document.querySelector('#formTurno [name=silo]').value=vals.join(', '); }
 document.querySelectorAll('#siloChips .chip').forEach(chip=>{ chip.addEventListener('click',()=>{ chip.classList.toggle('active'); updateSiloHidden(); }); });
 
-function updateRecebidoAuto(){ let data=document.querySelector('#formTurno [name=data]').value; let total=state.recebimentos.filter(r=>r.data===data).reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0); document.getElementById('recebInfo').value=total.toFixed(0)+' L'; }
+function updateRecebidoAuto(){ let data=document.querySelector('#formTurno [name=data]').value; let ua=combustivelAtual(); let total=state.recebimentos.filter(r=>r.data===data&&recebComb(r)===ua).reduce((s,r)=>s+recebQtd(r),0); document.getElementById('recebInfo').value=total.toFixed(0)+' '+unidadeComb(ua); }
+// Rótulos do campo de combustível do turno seguem o combustível atual (gás por padrão)
+function applyTurnoFuelLabels(){
+  let ua=combustivelAtual(), ehGas=ua==='gas', u=unidadeComb(ua);
+  let nome=ehGas?'Gás':'Óleo';
+  document.getElementById('turnoFuelHead').textContent=nome+' (opcional)';
+  document.getElementById('turnoFuelHint').textContent='Se não souber o consumo, deixe em branco — o app estima pela média de '+nome.toLowerCase()+' recebido ÷ areia processada.';
+  document.getElementById('turnoFuelLabel').textContent=nome+' consumido no turno ('+u+')';
+  document.getElementById('recebInfoLabel').textContent=nome+' recebido neste dia (automático)';
+}
+// ===== Abastecimento: seletor de combustível e fornecedores =====
+const FORN_GAS=["Copa Energia"], FORN_OLEO=["Madalena","José William","Eugênia","Emanuel","Walk"];
+function setFornecedorChips(fuel){
+  let box=document.getElementById('fornecedorChips');
+  let list=fuel==='gas'?FORN_GAS:FORN_OLEO;
+  box.innerHTML=list.map(f=>`<button type="button" class="chip" data-val="${f}">${f}</button>`).join('')+`<button type="button" class="chip" data-val="__outro__">Outro</button>`;
+  box.querySelectorAll('.chip').forEach(chip=>{ chip.addEventListener('click',()=>{ box.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); let val=chip.dataset.val; let hidden=document.querySelector('#formReceb [name=fornecedor]'); let ow=document.getElementById('fornecedorOutroWrap'); if(val==='__outro__'){ ow.style.display='block'; hidden.value=document.getElementById('fornecedorOutroInput').value; document.getElementById('fornecedorOutroInput').focus(); } else { ow.style.display='none'; hidden.value=val; } }); });
+  document.querySelector('#formReceb [name=fornecedor]').value='';
+  document.getElementById('fornecedorOutroWrap').style.display='none';
+}
+function setRecebFuel(fuel){
+  document.querySelector('#formReceb [name=combustivel]').value=fuel;
+  document.querySelectorAll('#combChipsReceb .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===fuel));
+  document.getElementById('gasFields').style.display=fuel==='gas'?'':'none';
+  document.getElementById('oleoFields').style.display=fuel==='oleo'?'':'none';
+  document.getElementById('oleoTestes').style.display=fuel==='oleo'?'':'none';
+  document.getElementById('recebTitle').textContent=fuel==='gas'?'Abastecimento de gás':'Recebimento de óleo';
+  setFornecedorChips(fuel);
+}
+document.querySelectorAll('#combChipsReceb .chip').forEach(chip=>{ chip.addEventListener('click',()=>setRecebFuel(chip.dataset.val)); });
 
-document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); updateRecebidoAuto(); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
+document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); document.getElementById('fuelTurnoInput').value=''; applyTurnoFuelLabels(); updateRecebidoAuto(); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 document.querySelector('#formTurno [name=data]').addEventListener('change',updateRecebidoAuto);
 document.getElementById('btnAddLote').addEventListener('click',addLote);
 
-document.getElementById('btnReceb').addEventListener('click',()=>{ document.querySelector('#formReceb [name=data]').value=new Date().toISOString().slice(0,10); document.querySelector('#formReceb [name=hora]').value=new Date().toTimeString().slice(0,5); document.getElementById('sheetReceb').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
+document.getElementById('btnReceb').addEventListener('click',()=>{ let f=document.getElementById('formReceb'); f.reset(); document.querySelectorAll('#combChips .chip,#aguaChips .chip').forEach(c=>c.classList.remove('active')); document.querySelector('#formReceb [name=data]').value=new Date().toISOString().slice(0,10); document.querySelector('#formReceb [name=hora]').value=new Date().toTimeString().slice(0,5); setRecebFuel(combustivelAtual()); document.getElementById('sheetReceb').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 
 document.getElementById('btnConfig').addEventListener('click',()=>{ let f=document.getElementById('formConfig'); f.apiKey.value=state.cfg.apiKey||''; f.databaseURL.value=state.cfg.databaseURL||''; f.umidade.value=state.cfg.umidade; f.densidade.value=state.cfg.densidade; f.concha_m3.value=state.cfg.concha_m3||2.1; f.meta.value=state.cfg.meta; f.tolerancia.value=state.cfg.tolerancia; document.getElementById('sheetConfig').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 function close(){ document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open')); document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click',close);
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
 
-// fornecedor chips
-document.querySelectorAll('#fornecedorChips .chip').forEach(chip=>{ chip.addEventListener('click',()=>{ document.querySelectorAll('#fornecedorChips .chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); let val=chip.dataset.val; let hidden=document.querySelector('#formReceb [name=fornecedor]'); let ow=document.getElementById('fornecedorOutroWrap'); if(val==='__outro__'){ ow.style.display='block'; hidden.value=document.getElementById('fornecedorOutroInput').value; document.getElementById('fornecedorOutroInput').focus(); } else{ ow.style.display='none'; hidden.value=val; } }); });
+// fornecedor: chips criados dinamicamente por setFornecedorChips(fuel)
 document.getElementById('fornecedorOutroInput').addEventListener('input',e=>{ document.querySelector('#formReceb [name=fornecedor]').value=e.target.value; });
 // testes chips (single-select)
 function singleChip(groupId,hiddenName){ document.querySelectorAll(`#${groupId} .chip`).forEach(chip=>{ chip.addEventListener('click',()=>{ document.querySelectorAll(`#${groupId} .chip`).forEach(c=>c.classList.remove('active')); chip.classList.add('active'); document.querySelector(`#formReceb [name=${hiddenName}]`).value=chip.dataset.val; }); }); }
@@ -350,7 +407,7 @@ document.getElementById('formTurno').addEventListener('submit',e=>{
   let m3u=+(tc*conchaM3()).toFixed(1);
   let tempoTotal=ll.reduce((s,l)=>s+(l.tempo_min||0),0);
   let entry={data:f.data.value,turno:f.turno.value,operador:f.operador.value,fornecedor_areia:f.fornecedor_areia.value,silo:f.silo.value,lotes:ll,conchas:tc,m3_umida:m3u,tempo_secagem_min:tempoTotal,origem:'app'};
-  if(f.oleo_consumido.value!=='') entry.oleo_consumido=Number(f.oleo_consumido.value);
+  { let fv=document.getElementById('fuelTurnoInput').value; if(fv!==''){ if(combustivelAtual()==='gas') entry.gas_kg=Number(fv); else entry.oleo_consumido=Number(fv); } }
   if(f.obs.value.trim()) entry.obs=f.obs.value.trim();
   addEntry(TURNOS,entry);
   close();
@@ -360,18 +417,27 @@ document.getElementById('formTurno').addEventListener('submit',e=>{
 document.getElementById('formReceb').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
+  let fuel=f.combustivel.value||'gas';
   if(!f.fornecedor.value){alert('Selecione o fornecedor.');return;}
-  let entry={data:f.data.value,hora:f.hora.value,antes:Number(f.antes.value),depois:Number(f.depois.value),fornecedor:f.fornecedor.value,recebedor:f.recebedor.value};
-  if(f.preco_litro.value!=='') entry.preco_litro=Number(f.preco_litro.value);
-  if(f.teste_combustao.value) entry.teste_combustao=f.teste_combustao.value;
-  if(f.teste_agua.value) entry.teste_agua=f.teste_agua.value;
+  let entry={data:f.data.value,hora:f.hora.value,combustivel:fuel,fornecedor:f.fornecedor.value,recebedor:f.recebedor.value};
+  if(fuel==='gas'){
+    if(f.kg.value===''||Number(f.kg.value)<=0){alert('Informe a quantidade de gás (kg) da nota.');return;}
+    entry.kg=Number(f.kg.value);
+    if(f.preco_kg.value!=='') entry.preco_kg=Number(f.preco_kg.value);
+  } else {
+    if(f.antes.value===''||f.depois.value===''){alert('Informe antes e depois (L) do tanque.');return;}
+    entry.antes=Number(f.antes.value); entry.depois=Number(f.depois.value);
+    if(f.preco_litro.value!=='') entry.preco_litro=Number(f.preco_litro.value);
+    if(f.teste_combustao.value) entry.teste_combustao=f.teste_combustao.value;
+    if(f.teste_agua.value) entry.teste_agua=f.teste_agua.value;
+  }
   addEntry(RECEB,entry);
   f.reset();
-  document.querySelectorAll('#fornecedorChips .chip,#combChips .chip,#aguaChips .chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('#fornecedorChips .chip,#combChips .chip,#aguaChips .chip,#combChipsReceb .chip').forEach(c=>c.classList.remove('active'));
   document.getElementById('fornecedorOutroWrap').style.display='none';
   document.getElementById('fornecedorOutroInput').value='';
   close();
-  alert('✅ Recebimento salvo!');
+  alert('✅ Abastecimento salvo!');
 });
 
 document.getElementById('formConfig').addEventListener('submit',e=>{

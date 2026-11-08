@@ -66,25 +66,25 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
   <div class="grid2">
     <div class="stat"><div class="v" id="statTurnos">—</div><div class="l">turnos registrados</div></div>
     <div class="stat"><div class="v" id="statReceb">—</div><div class="l">recebimentos</div></div>
-    <div class="stat"><div class="v" id="statMedia">—</div><div class="l">média L/ton</div></div>
-    <div class="stat"><div class="v" id="statTotalOleo">—</div><div class="l">óleo recebido (L)</div></div>
+    <div class="stat"><div class="v" id="statMedia">—</div><div class="l" id="lblStatMedia">média kg/ton</div></div>
+    <div class="stat"><div class="v" id="statTotalOleo">—</div><div class="l" id="lblStatTotalOleo">gás recebido (kg)</div></div>
   </div>
 </section>
 
 <section>
-  <h2>Custo do óleo</h2>
+  <h2 id="lblCustoSec">Custo do gás</h2>
   <div class="grid2">
     <div class="stat"><div class="v" id="custoTon">—</div><div class="l">R$ / ton seca</div></div>
-    <div class="stat"><div class="v" id="custoPeriodo">—</div><div class="l">custo de óleo no período</div></div>
+    <div class="stat"><div class="v" id="custoPeriodo">—</div><div class="l" id="lblCustoPeriodo">custo de gás no período</div></div>
     <div class="stat"><div class="v" id="custoM3">—</div><div class="l">R$ / m³ úmida</div></div>
-    <div class="stat"><div class="v" id="custoPreco">—</div><div class="l">preço médio do litro</div></div>
+    <div class="stat"><div class="v" id="custoPreco">—</div><div class="l" id="lblCustoPreco">preço médio por kg</div></div>
   </div>
 </section>
 
 <section>
-  <h2>Abastecimento de óleo</h2>
+  <h2 id="lblAbastSec">Abastecimento de gás</h2>
   <div class="grid2">
-    <div class="stat"><div class="v" id="oleoUltimo">—</div><div class="l">último recebimento</div></div>
+    <div class="stat"><div class="v" id="oleoUltimo">—</div><div class="l" id="lblAbastUltimo">último abastecimento</div></div>
     <div class="stat"><div class="v" id="oleoDias">—</div><div class="l">tempo desde o último</div></div>
     <div class="stat"><div class="v" id="oleoInterv">—</div><div class="l">intervalo médio entre recebimentos</div></div>
   </div>
@@ -92,7 +92,7 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 </section>
 
 <section>
-  <h2>Consumo L/ton por turno</h2>
+  <h2 id="lblConsumoSec">Consumo kg/ton por turno</h2>
   <div class="card"><div class="chart-wrap"><canvas id="chartLton"></canvas></div></div>
 </section>
 
@@ -102,14 +102,14 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 </section>
 
 <section>
-  <h2>Óleo recebido por fornecedor</h2>
+  <h2 id="lblFornSec">Gás recebido por fornecedor</h2>
   <div class="card"><div class="chart-wrap"><canvas id="chartOleo"></canvas></div></div>
 </section>
 
 <section>
   <h2>Desempenho por colaborador</h2>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Areia processada (m³ úmida) por operador</div><div class="chart-wrap"><canvas id="chartColabAreia"></canvas></div></div>
-  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média L/ton por operador (menor = melhor)</div><div class="chart-wrap"><canvas id="chartColabLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média kg/ton por operador (menor = melhor)</div><div class="chart-wrap"><canvas id="chartColabLton"></canvas></div></div>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Tempo médio de secagem por lote (min) por operador</div><div class="chart-wrap"><canvas id="chartColabTempo"></canvas></div></div>
 </section>
 
@@ -121,13 +121,13 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
 <section>
   <h2>Produtividade e comparativos</h2>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Produtividade — ton seca por hora de secagem, por operador (maior = melhor)</div><div class="chart-wrap"><canvas id="chartProd"></canvas></div></div>
-  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por origem da areia (menor = melhor)</div><div class="chart-wrap"><canvas id="chartOrigem"></canvas></div></div>
-  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio L/ton por turno (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTurno"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio kg/ton por origem da areia (menor = melhor)</div><div class="chart-wrap"><canvas id="chartOrigem"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Consumo médio kg/ton por turno (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTurno"></canvas></div></div>
 </section>
 
 <section>
   <h2>Tendência mês a mês</h2>
-  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média de L/ton por mês (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTendLton"></canvas></div></div>
+  <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Média de kg/ton por mês (menor = melhor)</div><div class="chart-wrap"><canvas id="chartTendLton"></canvas></div></div>
   <div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Custo R$/ton por mês</div><div class="chart-wrap"><canvas id="chartTendCusto"></canvas></div></div>
 </section>
 
@@ -153,7 +153,7 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
         <div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" name="densidade" required></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Meta L/ton</label><input type="number" step="0.1" name="meta" required></div>
+        <div class="field"><label>Meta kg/ton (gás)</label><input type="number" step="0.1" name="meta" required></div>
         <div class="field"><label>Tolerância (%)</label><input type="number" step="1" name="tolerancia" required></div>
       </div>
       <div class="row2">
@@ -170,7 +170,7 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
   <h2>Histórico completo — Turnos</h2>
   <div class="card tblwrap">
     <table id="tblTurnos">
-      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Origem</th><th>m³ úmida</th><th>Silo</th><th>Conchas</th><th>Tempo</th><th>Óleo</th><th>L/ton</th><th>Obs</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Origem</th><th>m³ úmida</th><th>Silo</th><th>Conchas</th><th>Tempo</th><th id="thTurnoOleo">Gás</th><th id="thTurnoLton">kg/ton</th><th>Obs</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -180,7 +180,7 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
   <h2>Histórico completo — Recebimentos</h2>
   <div class="card tblwrap">
     <table id="tblReceb">
-      <thead><tr><th>Data</th><th>Hora</th><th>Antes</th><th>Depois</th><th>Litros</th><th>R$/L</th><th>Combustão</th><th>Água</th><th>Fornecedor</th><th>Recebedor</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Data</th><th>Hora</th><th>Comb.</th><th>Qtd</th><th>Preço</th><th>Fornecedor</th><th>Recebedor</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -215,17 +215,57 @@ function tempoMinLote(ini,fim){ if(!ini||!fim)return null; let a=String(ini).spl
 // Tempo de secagem do turno: soma automática dos lotes (por tempo_min ou calculado do início/fim); cai para o total salvo
 function tempoTurno(t){ let lotes=Array.isArray(t.lotes)?t.lotes:[]; let sum=0,has=false; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ sum+=m; has=true; } }); if(has)return sum; if(t.tempo_secagem_min!=null&&isFinite(t.tempo_secagem_min)&&Number(t.tempo_secagem_min)>0)return Number(t.tempo_secagem_min); return null; }
 function tempoFmt(min){ if(min==null||isNaN(min))return ''; let h=Math.floor(min/60),m=min%60; return h?`${h}h${m?(' '+m+'m'):''}`:`${m}m`; }
-function mediaLton(){ let litros=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0); let ton=turnos.reduce((s,t)=>s+tonOf(t).ton,0); return ton>0?litros/ton:0; }
+// ===== Combustível (dual: gás em kg / óleo em L) =====
+const VIGENCIA_GAS='2026-10-01';
+function recebComb(r){ return (r&&r.combustivel)||'oleo'; }
+function recebQtd(r){ if(!r)return 0; if(recebComb(r)==='gas') return Number(r.kg)||0; return (Number(r.depois)-Number(r.antes))||0; }
+function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.preco_kg):Number(r.preco_litro); return (isFinite(p)&&p>0)?p:null; }
+function unidadeComb(c){ return c==='gas'?'kg':'L'; }
+function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
+function precoPadrao(c){ return c==='gas'?5.60:2.50; }
+function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel&&r.data>=VIGENCIA_GAS).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function inicioPeriodoComb(comb){ let ds=recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
+function mediaLton(comb){
+  comb=comb||combustivelAtual();
+  let ini=inicioPeriodoComb(comb);
+  let qtd=recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
+  let ton=turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
+  return ton>0?qtd/ton:0;
+}
+function precoMedio(comb){ comb=comb||combustivelAtual(); let s=0,l=0; recebimentos.forEach(r=>{ if(recebComb(r)!==comb)return; let p=recebPreco(r), q=recebQtd(r); if(p&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:precoPadrao(comb); }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
-  let oleo=0, medido=false;
-  if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ oleo+=(Number(t.tanque_ini)-Number(t.tanque_fim)); medido=true; }
-  if(t.oleo_receb){ oleo+=Number(t.oleo_receb); medido=true; }
-  if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ oleo+=Number(t.oleo_consumido); medido=true; }
+  let comb=null, oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
+  if(t.gas_kg!==undefined&&t.gas_kg!==null&&t.gas_kg!==''){ comb='gas'; oleo=Number(t.gas_kg); medido=true; }
+  else {
+    let q=0,om=false;
+    if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }
+    if(t.oleo_receb){ q+=Number(t.oleo_receb); om=true; }
+    if(t.oleo_consumido!==undefined&&t.oleo_consumido!==null&&t.oleo_consumido!==''){ q+=Number(t.oleo_consumido); om=true; }
+    if(om){ comb='oleo'; oleo=q; medido=true; }
+  }
+  if(!comb){ comb=(t.data&&t.data>=VIGENCIA_GAS)?'gas':'oleo'; }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&ton>0.01){ let m=mediaLton(); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
-  return{m3u,m3s,ton,oleo,lton,estimado};
+  else if(!lton&&ton>0.01){ let m=mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  return{m3u,m3s,ton,comb,oleo,lton,estimado};
+}
+function combLabel(c){ return c==='gas'?'gás':'óleo'; }
+// Atualiza rótulos (unidade/combustível) conforme o combustível atual
+function aplicaRotulos(){
+  let ua=combustivelAtual(), uc=unidadeCons(ua), u=unidadeComb(ua), nome=combLabel(ua), Nome=nome.charAt(0).toUpperCase()+nome.slice(1);
+  let set=(id,txt)=>{ let e=document.getElementById(id); if(e)e.textContent=txt; };
+  set('lblCustoSec','Custo do '+nome);
+  set('lblAbastSec','Abastecimento de '+nome);
+  set('lblConsumoSec','Consumo '+uc+' por turno');
+  set('lblFornSec',Nome+' recebido por fornecedor');
+  set('lblStatMedia','média '+uc);
+  set('lblStatTotalOleo',nome+' recebido ('+u+')');
+  set('lblCustoPreco','preço médio por '+u);
+  set('lblCustoPeriodo','custo de '+nome+' no período');
+  set('lblAbastUltimo','último abastecimento');
+  set('thTurnoOleo',Nome);
+  set('thTurnoLton',uc);
 }
 
 db.ref('parametros').on('value',snap=>{
@@ -275,6 +315,7 @@ function fillMesSel(){
 document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
 
 function renderAll(){
+  aplicaRotulos();
   fillMesSel();
   renderStats();
   renderCusto();
@@ -297,21 +338,22 @@ function renderComparativos(){
   let ops=Object.keys(po).filter(o=>po[o].h>0).sort((a,b)=>(po[b].ton/po[b].h)-(po[a].ton/po[a].h));
   drawBar('chartProd',ops,ops.map(o=>+(po[o].ton/po[o].h).toFixed(2)),'#8ac6a0');
   let orig={};
-  turnos.forEach(t=>{ let o=((t.fornecedor_areia||'').trim())||'—'; let c=compute(t); if(!orig[o])orig[o]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){orig[o].s+=c.lton;orig[o].n++;} });
+  let _ua=combustivelAtual();
+  turnos.forEach(t=>{ let o=((t.fornecedor_areia||'').trim())||'—'; let c=compute(t); if(c.comb!==_ua)return; if(!orig[o])orig[o]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){orig[o].s+=c.lton;orig[o].n++;} });
   let ok=Object.keys(orig).filter(o=>orig[o].n>0).sort((a,b)=>(orig[a].s/orig[a].n)-(orig[b].s/orig[b].n));
   drawBar('chartOrigem',ok,ok.map(o=>+(orig[o].s/orig[o].n).toFixed(2)),'#E8A33D');
   let TUR=['Manhã','Tarde','Noite'], tt={};
-  turnos.forEach(t=>{ let tu=(t.turno||'—'); let c=compute(t); if(!tt[tu])tt[tu]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){tt[tu].s+=c.lton;tt[tu].n++;} });
+  turnos.forEach(t=>{ let tu=(t.turno||'—'); let c=compute(t); if(c.comb!==_ua)return; if(!tt[tu])tt[tu]={s:0,n:0}; if(c.lton&&isFinite(c.lton)){tt[tu].s+=c.lton;tt[tu].n++;} });
   let tk=TUR.filter(x=>tt[x]&&tt[x].n>0).concat(Object.keys(tt).filter(x=>TUR.indexOf(x)<0&&tt[x].n>0));
   drawBar('chartTurno',tk,tk.map(x=>+(tt[x].s/tt[x].n).toFixed(2)),'#7aa7d9');
 }
 // Tendência mês a mês (usa todos os meses, ignora o filtro)
 function renderTendencia(){
-  let pm=precoMedio(), byM={};
-  turnos.forEach(t=>{ let m=mesDe(t.data); if(!m)return; let c=compute(t); if(!byM[m])byM[m]={s:0,n:0,ton:0,oleo:0}; if(c.lton&&isFinite(c.lton)){byM[m].s+=c.lton;byM[m].n++;} byM[m].ton+=c.ton||0; byM[m].oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  let UA=combustivelAtual(), UC=unidadeCons(UA), pm=precoMedio(UA), byM={};
+  turnos.forEach(t=>{ let m=mesDe(t.data); if(!m)return; let c=compute(t); if(c.comb!==UA)return; if(!byM[m])byM[m]={s:0,n:0,ton:0,oleo:0}; if(c.lton&&isFinite(c.lton)){byM[m].s+=c.lton;byM[m].n++;} byM[m].ton+=c.ton||0; byM[m].oleo+=(isFinite(c.oleo)?c.oleo:0); });
   let ms=Object.keys(byM).sort(), labels=ms.map(mesLabel);
   if(_charts.chartTendLton)_charts.chartTendLton.destroy();
-  _charts.chartTendLton=new Chart(document.getElementById('chartTendLton'),{type:'line',data:{labels,datasets:[{label:'L/ton',data:ms.map(m=>byM[m].n?+(byM[m].s/byM[m].n).toFixed(2):null),borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},{label:'Meta',data:ms.map(()=>cfg.meta),borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
+  _charts.chartTendLton=new Chart(document.getElementById('chartTendLton'),{type:'line',data:{labels,datasets:[{label:UC,data:ms.map(m=>byM[m].n?+(byM[m].s/byM[m].n).toFixed(2):null),borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},{label:'Meta',data:ms.map(()=>cfg.meta),borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
   if(_charts.chartTendCusto)_charts.chartTendCusto.destroy();
   _charts.chartTendCusto=new Chart(document.getElementById('chartTendCusto'),{type:'bar',data:{labels,datasets:[{data:ms.map(m=>byM[m].ton>0?+((byM[m].oleo*pm)/byM[m].ton).toFixed(2):null),backgroundColor:'#4F9D69'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',font:{size:10}}},y:{ticks:{color:'#8D96A1'}}}}});
 }
@@ -319,11 +361,11 @@ function _set(id,v){ let e=document.getElementById(id); if(e)e.textContent=v; }
 function brl(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function brl0(n){ return 'R$ '+Number(n).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
 // Preço médio do litro (ponderado pelos litros recebidos); cai para 2,50 se não houver preço
-function precoMedio(){ let s=0,l=0; recebimentos.forEach(r=>{ let p=Number(r.preco_litro), q=Number(r.depois)-Number(r.antes); if(isFinite(p)&&p>0&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:2.5; }
-// Custo do óleo consumido / produção (usa mês filtrado)
+// precoMedio() agora é dual-combustível e está definido no topo (com os helpers de combustível)
+// Custo do combustível consumido / produção (usa mês filtrado)
 function renderCusto(){
-  const turnos=turnosF(); let pm=precoMedio(); let ton=0,m3=0,oleo=0;
-  turnos.forEach(t=>{ let c=compute(t); ton+=c.ton||0; m3+=c.m3u||0; oleo+=(isFinite(c.oleo)?c.oleo:0); });
+  const turnos=turnosF(); let ua=combustivelAtual(); let pm=precoMedio(ua); let ton=0,m3=0,oleo=0;
+  turnos.forEach(t=>{ let c=compute(t); if(c.comb!==ua)return; ton+=c.ton||0; m3+=c.m3u||0; oleo+=(isFinite(c.oleo)?c.oleo:0); });
   let custo=oleo*pm;
   _set('custoPreco',brl(pm));
   _set('custoPeriodo',custo>0?brl0(custo):'—');
@@ -332,18 +374,19 @@ function renderCusto(){
 }
 // Cadência de abastecimento (all-time; alerta se está demorando mais que a média)
 function renderOleoSupply(){
-  let rs=recebimentos.filter(r=>r.data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let ua=combustivelAtual(), u=unidadeComb(ua), nome=combLabel(ua);
+  let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let al=document.getElementById('oleoAlerta');
   if(!rs.length){ _set('oleoUltimo','—'); _set('oleoDias','—'); _set('oleoInterv','—'); if(al)al.style.display='none'; return; }
   let last=rs[rs.length-1];
-  let litUlt=(Number(last.depois)-Number(last.antes))||0;
+  let litUlt=recebQtd(last)||0;
   let dLast=Math.max(0,Math.floor((Date.now()-new Date(last.data+'T12:00:00').getTime())/86400000));
   let gaps=[]; for(let i=1;i<rs.length;i++){ gaps.push((new Date(rs[i].data)-new Date(rs[i-1].data))/86400000); }
   let interv=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
-  _set('oleoUltimo',formatDate(last.data)+' · '+litUlt+' L');
+  _set('oleoUltimo',formatDate(last.data)+' · '+litUlt+' '+u);
   _set('oleoDias',dLast+' dia'+(dLast===1?'':'s'));
   _set('oleoInterv',interv!=null?('~'+interv.toFixed(0)+' dias'):'—');
-  if(al){ if(interv!=null&&dLast>Math.ceil(interv)){ al.style.display='block'; al.textContent='⚠️ Faz '+dLast+' dias desde o último recebimento de óleo (a média é ~'+interv.toFixed(0)+' dias). Pode estar na hora de pedir.'; } else { al.style.display='none'; } }
+  if(al){ if(interv!=null&&dLast>Math.ceil(interv)){ al.style.display='block'; al.textContent='⚠️ Faz '+dLast+' dias desde o último abastecimento de '+nome+' (a média é ~'+interv.toFixed(0)+' dias). Pode estar na hora de pedir.'; } else { al.style.display='none'; } }
 }
 // Categorias de parada extraídas do texto das observações
 const CAT_PARADAS=[
@@ -352,7 +395,7 @@ const CAT_PARADAS=[
   {nome:'Caldeira / forno / bico',re:/caldeir|forno|fornalh|\bbico|carv[ãa]o|pi[ãa]o|senta/i},
   {nome:'Peneira',re:/peneir/i},
   {nome:'Reco-reco / betoneira',re:/reco.?reco|betoneir/i},
-  {nome:'Falta de óleo',re:/acabou o [óo]leo|[óo]leo acabou|falta.*[óo]leo|sem [óo]leo|problema no [óo]leo/i},
+  {nome:'Falta de combustível',re:/acabou o [óo]leo|[óo]leo acabou|falta.*[óo]leo|sem [óo]leo|problema no [óo]leo|acabou o g[áa]s|g[áa]s acabou|falta.*g[áa]s|sem g[áa]s/i},
 ];
 function renderParadas(){
   const turnos=turnosF();
@@ -382,7 +425,8 @@ function normOp(o){
 function renderColab(){
   const turnos=turnosF();
   let porOp={};
-  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
+  let _uaC=combustivelAtual();
+  turnos.forEach(t=>{ let op=normOp(t.operador); if(!op)return; let c=compute(t); if(!porOp[op])porOp[op]={m3:0,ltonSum:0,ltonN:0,tempoSum:0,tempoN:0}; porOp[op].m3+=c.m3u; if(c.lton&&isFinite(c.lton)&&c.comb===_uaC){ porOp[op].ltonSum+=c.lton; porOp[op].ltonN++; } let lotes=Array.isArray(t.lotes)?t.lotes:[]; lotes.forEach(l=>{ let m=(l&&l.tempo_min!=null&&isFinite(l.tempo_min)&&l.tempo_min>0)?Number(l.tempo_min):tempoMinLote(l&&l.ini,l&&l.fim); if(m!=null&&isFinite(m)&&m>0){ porOp[op].tempoSum+=m; porOp[op].tempoN++; } }); });
   let ops=Object.keys(porOp).sort((a,b)=>porOp[b].m3-porOp[a].m3);
   function mk(refVar,canvas,data,color,horiz){ if(window[refVar])window[refVar].destroy(); window[refVar]=new Chart(document.getElementById(canvas),{type:'bar',data:{labels:ops,datasets:[{data,backgroundColor:color}]},options:{indexAxis:horiz?'y':'x',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}}); }
   if(chartColabAreia)chartColabAreia.destroy();
@@ -397,10 +441,11 @@ function renderStats(){
   const turnos=turnosF(), recebimentos=recebF();
   document.getElementById('statTurnos').textContent=turnos.length;
   document.getElementById('statReceb').textContent=recebimentos.length;
-  let ltons=turnos.map(compute).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
+  let ua=combustivelAtual();
+  let ltons=turnos.map(compute).filter(c=>c.comb===ua).map(c=>c.lton).filter(v=>v!=null&&isFinite(v));
   let media=ltons.length?(ltons.reduce((a,b)=>a+b,0)/ltons.length):0;
   document.getElementById('statMedia').textContent=media?media.toFixed(2):'—';
-  let totalOleo=recebimentos.reduce((s,r)=>s+(Number(r.depois)-Number(r.antes)),0);
+  let totalOleo=recebimentos.filter(r=>recebComb(r)===ua).reduce((s,r)=>s+recebQtd(r),0);
   document.getElementById('statTotalOleo').textContent=totalOleo.toFixed(0);
 }
 
@@ -408,14 +453,15 @@ function renderCharts(){
   const turnos=turnosF(), recebimentos=recebF();
   let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
-  let ltonData=sorted.map(t=>{let c=compute(t);return c.lton?+c.lton.toFixed(2):null;});
+  let UA=combustivelAtual(), UC=unidadeCons(UA), U=unidadeComb(UA);
+  let ltonData=sorted.map(t=>{let c=compute(t);return (c.comb===UA&&c.lton)?+c.lton.toFixed(2):null;});
   let metaLine=sorted.map(()=>cfg.meta);
 
   if(chartLton)chartLton.destroy();
   chartLton=new Chart(document.getElementById('chartLton'),{
     type:'line',
     data:{labels,datasets:[
-      {label:'L/ton',data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
+      {label:UC,data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
       {label:'Meta',data:metaLine,borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
@@ -434,12 +480,12 @@ function renderCharts(){
   });
 
   let byForn={};
-  recebimentos.forEach(r=>{ let l=Number(r.depois)-Number(r.antes); byForn[r.fornecedor]=(byForn[r.fornecedor]||0)+l; });
+  recebimentos.forEach(r=>{ if(recebComb(r)!==UA)return; byForn[r.fornecedor]=(byForn[r.fornecedor]||0)+recebQtd(r); });
   let fornLabels=Object.keys(byForn);
   if(chartOleo)chartOleo.destroy();
   chartOleo=new Chart(document.getElementById('chartOleo'),{
     type:'bar',
-    data:{labels:fornLabels,datasets:[{label:'Litros',data:fornLabels.map(f=>byForn[f]),backgroundColor:'#4F9D69'}]},
+    data:{labels:fornLabels,datasets:[{label:U,data:fornLabels.map(f=>byForn[f]),backgroundColor:'#4F9D69'}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{color:'#8D96A1'}},y:{ticks:{color:'#8D96A1',font:{size:10}}}}}
   });
@@ -450,14 +496,13 @@ function csvEsc(v){ v=(v==null?'':String(v)); return /[",;\n]/.test(v)?('"'+v.re
 function toCSV(rows){ return rows.map(r=>r.map(csvEsc).join(';')).join('\n'); }
 function baixarCSV(nome,rows){ let blob=new Blob(['﻿'+toCSV(rows)],{type:'text/csv;charset=utf-8;'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); a.remove(); }
 function exportTurnos(){
-  let pm=precoMedio();
-  let rows=[['Data','Turno','Operador','Origem','m3_umida','ton_seca','Silo','Conchas','Tempo_min','Oleo_L','L_ton','Custo_oleo_R$','Obs']];
-  turnosF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),(isFinite(c.oleo)?c.oleo.toFixed(0):''),(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
+  let rows=[['Data','Turno','Operador','Origem','m3_umida','ton_seca','Silo','Conchas','Tempo_min','Combustivel','Qtd','Unid','Consumo_un_ton','Custo_R$','Obs']];
+  turnosF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t),pm=precoMedio(c.comb),u=unidadeComb(c.comb); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),combLabel(c.comb),(isFinite(c.oleo)?c.oleo.toFixed(0):''),u,(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
   baixarCSV('turnos_'+(mesFiltro||'todos')+'.csv',rows);
 }
 function exportReceb(){
-  let rows=[['Data','Hora','Fornecedor','Litros','Preco_litro_R$','Total_R$','Combustao','Agua','Recebedor']];
-  recebF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(r=>{ let lit=(Number(r.depois)-Number(r.antes))||0,p=Number(r.preco_litro); rows.push([r.data,r.hora||'',r.fornecedor||'',lit,(isFinite(p)?p.toFixed(2):''),(isFinite(p)?(p*lit).toFixed(2):''),r.teste_combustao||'',r.teste_agua||'',r.recebedor||'']); });
+  let rows=[['Data','Hora','Combustivel','Qtd','Unid','Preco_un_R$','Total_R$','Fornecedor','Recebedor']];
+  recebF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(r=>{ let comb=recebComb(r),q=recebQtd(r)||0,p=recebPreco(r),u=unidadeComb(comb); rows.push([r.data,r.hora||'',combLabel(comb),q,u,(p!=null?p.toFixed(2):''),(p!=null?(p*q).toFixed(2):''),r.fornecedor||'',r.recebedor||'']); });
   baixarCSV('recebimentos_'+(mesFiltro||'todos')+'.csv',rows);
 }
 async function padronizarNomes(){
@@ -475,7 +520,8 @@ function renderTurnosTable(){
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t); let nc=turnoConchas(t);
     let temp=tempoFmt(tempoTurno(t));
-    let oleo=(t.oleo_consumido!=null&&t.oleo_consumido!=='')?Number(t.oleo_consumido).toFixed(0)
+    let oleo=(t.gas_kg!=null&&t.gas_kg!=='')?Number(t.gas_kg).toFixed(0)
+      :(t.oleo_consumido!=null&&t.oleo_consumido!=='')?Number(t.oleo_consumido).toFixed(0)
       :(t.oleo_receb!=null&&t.oleo_receb!=='')?Number(t.oleo_receb).toFixed(0)
       :(c.estimado&&isFinite(c.oleo)&&c.oleo>0)?'~'+c.oleo.toFixed(0)
       :'';
@@ -493,15 +539,15 @@ function renderTurnosTable(){
 function renderRecebTable(){
   let sorted=recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
   let tbody=document.querySelector('#tblReceb tbody');
-  function tst(v){ if(!v)return ''; return v==='Aprovado'?'<span style="color:var(--good)">✓ Aprov.</span>':'<span style="color:var(--danger)">✗ Reprov.</span>'; }
-  tbody.innerHTML=sorted.map(r=>`<tr data-id="${r.id}">
-      <td>${formatDate(r.data)}</td><td>${r.hora||''}</td><td>${r.antes??''}</td><td>${r.depois??''}</td>
-      <td>${(Number(r.depois)-Number(r.antes)).toFixed(0)}</td>
-      <td>${r.preco_litro!=null?('R$ '+Number(r.preco_litro).toFixed(2)):''}</td>
-      <td>${tst(r.teste_combustao)}</td><td>${tst(r.teste_agua)}</td>
+  tbody.innerHTML=sorted.map(r=>{ let comb=recebComb(r), u=unidadeComb(comb), p=recebPreco(r);
+    return `<tr data-id="${r.id}">
+      <td>${formatDate(r.data)}</td><td>${r.hora||''}</td>
+      <td>${combLabel(comb)}</td>
+      <td>${recebQtd(r).toFixed(0)} ${u}</td>
+      <td>${p!=null?('R$ '+p.toFixed(2)+'/'+u):''}</td>
       <td>${r.fornecedor||''}</td><td>${r.recebedor||''}</td>
       <td><button class="btn" onclick="editReceb('${r.id}')">Editar</button><button class="btn danger" onclick="delEntry('recebimentos','${r.id}')">Excluir</button></td>
-    </tr>`).join('') || '<tr><td colspan="11" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
+    </tr>`; }).join('') || '<tr><td colspan="8" style="color:var(--muted);text-align:center;">Sem registros</td></tr>';
 }
 
 function delEntry(path,id){
@@ -514,6 +560,7 @@ function editTurno(id){
   if(!t)return;
   let row=document.querySelector(`#tblTurnos tr[data-id="${id}"]`);
   let opCanon=normOp(t.operador); let opIsKnown=OPERADORES.includes(opCanon);
+  let tc=compute(t).comb;
   row.innerHTML=`
     <td><input class="edit" type="date" value="${t.data}" data-f="data"></td>
     <td><input class="edit" value="${t.turno||''}" data-f="turno"></td>
@@ -530,7 +577,7 @@ function editTurno(id){
     <td><input class="edit wide" value="${t.silo||''}" data-f="silo"></td>
     <td><input class="edit" type="number" value="${turnoConchas(t)||''}" data-f="conchas"></td>
     <td>—</td>
-    <td><input class="edit" type="number" value="${t.oleo_consumido??t.oleo_receb??''}" data-f="oleo_consumido"></td>
+    <td><input class="edit" type="number" value="${tc==='gas'?(t.gas_kg??''):(t.oleo_consumido??t.oleo_receb??'')}" data-f="${tc==='gas'?'gas_kg':'oleo_consumido'}"></td>
     <td>—</td>
     <td><input class="edit wide" value="${(t.obs||'').replace(/"/g,'&quot;')}" data-f="obs"></td>
     <td><button class="btn primary" onclick="saveTurno('${id}')">Salvar</button><button class="btn" onclick="renderTurnosTable()">Cancelar</button></td>
@@ -561,71 +608,24 @@ function saveTurno(id){
 function editReceb(id){
   let r=recebimentos.find(x=>x.id===id);
   if(!r)return;
+  let comb=recebComb(r);
   let row=document.querySelector(`#tblReceb tr[data-id="${id}"]`);
-  let isKnown=FORNECEDORES.includes(r.fornecedor);
+  let qtdCell = comb==='gas'
+    ? `<input class="edit" type="number" value="${r.kg??''}" data-f="kg"> kg`
+    : `<input class="edit" type="number" value="${r.antes??''}" data-f="antes" placeholder="antes"> <input class="edit" type="number" value="${r.depois??''}" data-f="depois" placeholder="depois"> L`;
+  let precoCell = comb==='gas'
+    ? `<input class="edit" type="number" step="0.01" value="${r.preco_kg??''}" data-f="preco_kg">`
+    : `<input class="edit" type="number" step="0.01" value="${r.preco_litro??''}" data-f="preco_litro">`;
   row.innerHTML=`
     <td><input class="edit" type="date" value="${r.data}" data-f="data"></td>
     <td><input class="edit" type="time" value="${r.hora||''}" data-f="hora"></td>
-    <td><input class="edit" type="number" value="${r.antes??''}" data-f="antes"></td>
-    <td><input class="edit" type="number" value="${r.depois??''}" data-f="depois"></td>
-    <td>—</td>
-    <td><input class="edit" type="number" step="0.01" value="${r.preco_litro??''}" data-f="preco_litro"></td>
-    <td>
-      <div class="chip-group-mini" data-testgroup="teste_combustao">
-        <button type="button" class="chip-mini tst-ok${r.teste_combustao==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
-        <button type="button" class="chip-mini tst-no${r.teste_combustao==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
-      </div>
-      <input type="hidden" data-f="teste_combustao" value="${r.teste_combustao||''}">
-    </td>
-    <td>
-      <div class="chip-group-mini" data-testgroup="teste_agua">
-        <button type="button" class="chip-mini tst-ok${r.teste_agua==='Aprovado'?' active':''}" data-val="Aprovado">Aprov.</button>
-        <button type="button" class="chip-mini tst-no${r.teste_agua==='Reprovado'?' active':''}" data-val="Reprovado">Reprov.</button>
-      </div>
-      <input type="hidden" data-f="teste_agua" value="${r.teste_agua||''}">
-    </td>
-    <td>
-      <div class="chip-group-mini" id="fornChips_${id}">
-        ${FORNECEDORES.map(f=>`<button type="button" class="chip-mini${r.fornecedor===f?' active':''}" data-val="${f}">${f}</button>`).join('')}
-        <button type="button" class="chip-mini${!isKnown?' active':''}" data-val="__outro__">Outro</button>
-      </div>
-      <input type="hidden" id="fornVal_${id}" value="${isKnown?r.fornecedor:'__outro__'}">
-      <input class="edit wide" id="fornOutro_${id}" placeholder="Nome" style="margin-top:4px;${isKnown?'display:none;':''}" value="${!isKnown?(r.fornecedor||''):''}">
-    </td>
-    <td><input class="edit wide" value="${r.recebedor||''}" data-f="recebedor"></td>
+    <td>${combLabel(comb)}<input type="hidden" data-f="combustivel" value="${comb}"></td>
+    <td>${qtdCell}</td>
+    <td>${precoCell}</td>
+    <td><input class="edit wide" value="${(r.fornecedor||'').replace(/"/g,'&quot;')}" data-f="fornecedor"></td>
+    <td><input class="edit wide" value="${(r.recebedor||'').replace(/"/g,'&quot;')}" data-f="recebedor"></td>
     <td><button class="btn primary" onclick="saveReceb('${id}')">Salvar</button><button class="btn" onclick="renderRecebTable()">Cancelar</button></td>
   `;
-  document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(chip=>{
-    chip.addEventListener('click',()=>{
-      document.querySelectorAll(`#fornChips_${id} .chip-mini`).forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
-      let val=chip.dataset.val;
-      let hidden=document.getElementById(`fornVal_${id}`);
-      let outroInput=document.getElementById(`fornOutro_${id}`);
-      if(val==='__outro__'){
-        outroInput.style.display='block';
-        hidden.value=outroInput.value;
-        outroInput.focus();
-      }else{
-        outroInput.style.display='none';
-        hidden.value=val;
-      }
-    });
-  });
-  document.getElementById(`fornOutro_${id}`).addEventListener('input',e=>{
-    document.getElementById(`fornVal_${id}`).value=e.target.value;
-  });
-  row.querySelectorAll('[data-testgroup]').forEach(g=>{
-    let hid=g.parentElement.querySelector(`input[data-f="${g.dataset.testgroup}"]`);
-    g.querySelectorAll('.chip-mini').forEach(chip=>{
-      chip.addEventListener('click',()=>{
-        let already=chip.classList.contains('active');
-        g.querySelectorAll('.chip-mini').forEach(c=>c.classList.remove('active'));
-        if(already){ hid.value=''; }
-        else { chip.classList.add('active'); hid.value=chip.dataset.val; }
-      });
-    });
-  });
 }
 
 function saveReceb(id){
@@ -635,7 +635,6 @@ function saveReceb(id){
     let f=inp.dataset.f;
     updates[f]=(inp.type==='number')?Number(inp.value):inp.value;
   });
-  updates.fornecedor=document.getElementById(`fornVal_${id}`).value;
   db.ref('recebimentos/'+id).update(updates).catch(e=>alert('Erro ao salvar: '+e.message));
 }
 </script>

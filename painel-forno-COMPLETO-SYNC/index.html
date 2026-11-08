@@ -277,6 +277,16 @@ function mediaLton(comb){
   let ton=state.turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
   return ton>0?qtd/ton:0;
 }
+// combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
+function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
+// consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
+function mediaDoDia(comb,data){
+  if(!data) return 0;
+  let qtd=state.recebimentos.filter(r=>r&&r.data===data&&recebComb(r)===comb).reduce((s,r)=>s+recebQtd(r),0);
+  if(qtd<=0) return 0;
+  let ton=state.turnos.filter(t=>t&&t.data===data&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
+  return ton>0?qtd/ton:0;
+}
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
@@ -295,7 +305,7 @@ function compute(t){
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
   if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&ton>0.01){ let m=mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  else if(!lton&&ton>0.01){ let md=mediaDoDia(comb,t.data); let m=md>0?md:mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
 

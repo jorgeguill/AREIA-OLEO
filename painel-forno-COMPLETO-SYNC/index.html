@@ -255,7 +255,7 @@ function init(){ state.cfg={...DEFAULT_CFG,...load(CFG,{})}; state.turnos=load(T
 function turnoConchas(t){ if(Array.isArray(t.lotes)&&t.lotes.length) return t.lotes.reduce((s,l)=>s+(Number(l.conchas)||0),0); return Number(t.conchas)||0; }
 function tonOf(t){ let m3u=Number(t.m3_umida); if(!isFinite(m3u)||m3u===0){ let c=turnoConchas(t); if(c)m3u=c*conchaM3(); } m3u=m3u||0; return {m3u,ton:m3u*(1-state.cfg.umidade/100)*state.cfg.densidade}; }
 // ===== Combustível (dual: gás em kg / óleo em L) =====
-const VIGENCIA_GAS='2026-09-16';
+// combustível é classificado pela linha do tempo dos abastecimentos (combDaData), sem data fixa
 function recebComb(r){ return (r&&r.combustivel)||'oleo'; } // legado sem campo = óleo
 function recebQtd(r){ if(!r)return 0; if(recebComb(r)==='gas') return Number(r.kg)||0; return (Number(r.depois)-Number(r.antes))||0; }
 function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.preco_kg):Number(r.preco_litro); return (isFinite(p)&&p>0)?p:null; }

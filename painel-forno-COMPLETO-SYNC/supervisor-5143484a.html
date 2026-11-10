@@ -278,6 +278,7 @@ function mediaDoDia(comb,data){
 // Sem nota no período, cai para a média global (mediaLton) para não ficar em branco.
 function mediaPeriodo(comb){
   comb=comb||combEmFoco();
+  if(!mesFiltro) return mediaRecente(comb); // sem filtro, o headline mostra o mês mais recente (representativo), não a vida toda
   let recs=recebF().filter(r=>recebComb(r)===comb);
   let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
   let tts=turnosF().filter(t=>t&&t.data&&compute(t).comb===comb);
@@ -330,6 +331,27 @@ function estoqueKgEmTs(ts){
   a.sort((x,y)=>x.ts-y.ts);
   let v=0; for(let i=0;i<a.length;i++){ if(a[i].ts<=ts) v=a[i].kg; else break; } return v;
 }
+// Consumo REPRESENTATIVO de um mês (YYYY-MM): balanço de massa do gás no mês ÷ ton de gás do mês.
+function mediaMes(comb,mes){
+  comb=comb||combustivelAtual();
+  if(!mes) return mediaLton(comb);
+  let recs=recebimentos.filter(r=>recebComb(r)===comb&&r.data&&r.data.slice(0,7)===mes);
+  let tts=turnos.filter(t=>t&&t.data&&t.data.slice(0,7)===mes&&combDoTurno(t)===comb);
+  let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
+  if(ton<=0) return mediaLton(comb);
+  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
+  if(comb==='gas'){
+    let tss=recs.map(recebTs).concat(tts.map(turnoTs));
+    if(tss.length){ let ini=Math.min.apply(null,tss), fim=Math.max.apply(null,tss);
+      let q=qtd-(estoqueKgEmTs(fim)-estoqueKgEmTs(ini-1)); if(q>=0) return q/ton; }
+  }
+  return qtd>0?qtd/ton:mediaLton(comb);
+}
+function mediaRecente(comb){
+  comb=comb||combustivelAtual();
+  let ms=turnos.filter(t=>t&&t.data&&combDoTurno(t)===comb).map(t=>t.data.slice(0,7));
+  return ms.length?mediaMes(comb,ms.sort()[ms.length-1]):mediaLton(comb);
+}
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
@@ -350,7 +372,10 @@ function compute(t){
   let tkm=(comb==='gas')?medidoById[t.id]:null;
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&ton>0.01){ let md=mediaDoDia(comb,t.data); let m=md>0?md:mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  else if(!lton&&ton>0.01){
+    let m=(comb==='gas')?mediaMes(comb,(t.data||'').slice(0,7)):(mediaDoDia(comb,t.data)||mediaLton(comb));
+    if(m>0){ lton=m; oleo=ton*m; estimado=true; }
+  }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
 function aplicaRotulos(){

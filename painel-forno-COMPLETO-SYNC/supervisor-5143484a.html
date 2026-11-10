@@ -89,6 +89,17 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
   </div>
 </section>
 
+<section id="secEstoque" style="display:none;">
+  <h2>Estoque de gás (tonéis)</h2>
+  <div class="grid4">
+    <div class="stat"><div class="v" id="estTq1">—</div><div class="l">Tonel 1</div></div>
+    <div class="stat"><div class="v" id="estTq2">—</div><div class="l">Tonel 2</div></div>
+    <div class="stat"><div class="v" id="estTot">—</div><div class="l">total (kg)</div></div>
+    <div class="stat"><div class="v" id="estPct">—</div><div class="l">lotação média</div></div>
+  </div>
+  <div id="estCtx" style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4;"></div>
+</section>
+
 <section>
   <h2>Status do último turno</h2>
   <div class="card status-row">
@@ -191,10 +202,10 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
 </section>
 
 <script>
-const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",projectId:"painel-forno",umidade:8,densidade:1.5,meta:8,tolerancia:15,concha_m3:2.1,tonel_cap_kg:3880,n_toneis:2,estoque_baixo_pct:20};
 const app=firebase.initializeApp(DEFAULT_CFG,'supervisorApp');
 const db=firebase.database(app);
-let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3};
+let cfg={umidade:DEFAULT_CFG.umidade,densidade:DEFAULT_CFG.densidade,meta:DEFAULT_CFG.meta,tolerancia:DEFAULT_CFG.tolerancia,concha_m3:DEFAULT_CFG.concha_m3,tonel_cap_kg:DEFAULT_CFG.tonel_cap_kg,n_toneis:DEFAULT_CFG.n_toneis,estoque_baixo_pct:DEFAULT_CFG.estoque_baixo_pct};
 let turnos=[], recebimentos=[];
 let chartLton,chartAreia,chartOleo,chartColabAreia,chartColabLton,chartColabTempo,chartParadas;
 
@@ -230,8 +241,9 @@ function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combusti
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
-// combustível em uso na data: < OLEO_ATE = óleo; ≥ GAS_DESDE = gás; no meio, o do abastecimento mais recente (padrão óleo)
-function combDaData(data){ if(data&&data<OLEO_ATE) return 'oleo'; if(data&&data>=GAS_DESDE) return 'gas'; let rs=recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
+// forno a óleo até 17/10; passou a GÁS em 18/10. 15/09–17/10 = óleo mesmo com gás já ESTOCADO
+// (ex.: abastecimento 23/09 antes da virada): recebido/estocado, mas o forno só queimou óleo. Turno explícito manda.
+function combDaData(data){ if(!data) return 'oleo'; if(data>=GAS_DESDE) return 'gas'; return 'oleo'; }
 // combustível "em foco" = o do PERÍODO filtrado (não o global). Sem filtro, segue o atual.
 function combEmFoco(){
   if(!mesFiltro) return combustivelAtual();
@@ -247,7 +259,7 @@ function mediaLton(comb){
   comb=comb||combustivelAtual();
   let ini=inicioPeriodoComb(comb);
   let qtd=recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
-  let ton=turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
+  let ton=turnos.filter(t=>t.data&&(!ini||t.data>=ini)&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
@@ -269,6 +281,37 @@ function mediaPeriodo(comb){
   return (ton>0&&qtd>0)?qtd/ton:mediaLton(comb);
 }
 function precoMedio(comb){ comb=comb||combustivelAtual(); let s=0,l=0; recebimentos.forEach(r=>{ if(recebComb(r)!==comb)return; let p=recebPreco(r), q=recebQtd(r); if(p&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:precoPadrao(comb); }
+// ===== Leitura de tanque: consumo de gás MEDIDO pelo estoque dos tonéis =====
+function tonelCapKg(){ return Number(cfg.tonel_cap_kg)||3880; }
+function nToneis(){ return Number(cfg.n_toneis)||2; }
+function turnoTs(t){ let h=t&&t.turno==='Noite'?'22:00':(t&&t.turno==='Tarde'?'14:00':'06:00'); return new Date((t&&t.data||'1970-01-01')+'T'+h+':00').getTime(); }
+function recebTs(r){ return new Date(((r&&r.data)||'1970-01-01')+'T'+((r&&r.hora)||'00:00')+':00').getTime(); }
+function temLeitura(t){ return !!(t&&t.tq1_pct!==undefined&&t.tq1_pct!==''&&t.tq1_pct!==null&&t.tq2_pct!==undefined&&t.tq2_pct!==''&&t.tq2_pct!==null); }
+function estoqueLeitura(p1,p2){ return ((Number(p1)||0)+(Number(p2)||0))/100*tonelCapKg(); }
+function recebDepois(r){ return !!(r&&r.tq1_depois!==undefined&&r.tq1_depois!==''&&r.tq1_depois!==null&&r.tq2_depois!==undefined&&r.tq2_depois!==''&&r.tq2_depois!==null); }
+function gasAbastecidoEntre(ta,tb){ return recebimentos.filter(r=>recebComb(r)==='gas').filter(r=>{ let x=recebTs(r); return x>=ta&&x<tb; }).reduce((s,r)=>s+recebQtd(r),0); }
+let medidoById={};
+function calcMedido(){
+  let map={};
+  let ls=turnos.filter(temLeitura).slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
+  for(let i=0;i<ls.length-1;i++){
+    let a=ls[i], b=ls[i+1], ta=turnoTs(a), tb=turnoTs(b);
+    if(!(tb>ta)) continue;
+    let abastecido=gasAbastecidoEntre(ta,tb);
+    let consumo=estoqueLeitura(a.tq1_pct,a.tq2_pct)-estoqueLeitura(b.tq1_pct,b.tq2_pct)+abastecido;
+    let ton=turnos.filter(t=>{ let x=turnoTs(t); return x>=ta&&x<tb; }).reduce((s,t)=>s+tonOf(t).ton,0);
+    if(consumo>=0&&ton>0.01) map[a.id]={consumo:consumo,lton:consumo/ton};
+  }
+  return map;
+}
+function estoqueAtual(){
+  let cands=[];
+  turnos.filter(temLeitura).forEach(t=>cands.push({ts:turnoTs(t),p1:Number(t.tq1_pct),p2:Number(t.tq2_pct),quando:t.data,label:'leitura de turno'}));
+  recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)).forEach(r=>cands.push({ts:recebTs(r),p1:Number(r.tq1_depois),p2:Number(r.tq2_depois),quando:r.data,label:'após abastecimento'}));
+  if(!cands.length) return null;
+  cands.sort((a,b)=>a.ts-b.ts); let c=cands[cands.length-1];
+  return {p1:c.p1,p2:c.p2,kg:estoqueLeitura(c.p1,c.p2),quando:c.quando,label:c.label};
+}
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
@@ -286,7 +329,9 @@ function compute(t){
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
-  if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
+  let tkm=(comb==='gas')?medidoById[t.id]:null;
+  if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
+  else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){ let md=mediaDoDia(comb,t.data); let m=md>0?md:mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
@@ -343,12 +388,14 @@ function fillMesSel(){
   sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
   sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
 }
-document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; aplicaRotulos(); renderStats(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; aplicaRotulos(); renderStats(); renderEstoque(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
 
 function renderAll(){
+  medidoById=calcMedido();
   aplicaRotulos();
   fillMesSel();
   renderStats();
+  renderEstoque();
   renderCusto();
   renderOleoSupply();
   renderStatus();
@@ -491,6 +538,18 @@ function renderStats(){
   let last=sorted[sorted.length-1];
   let lastC=last?compute(last):null;
   document.getElementById('statUltimoLton').textContent=lastC&&lastC.lton?lastC.lton.toFixed(2):'—';
+}
+function renderEstoque(){
+  let sec=document.getElementById('secEstoque'); if(!sec)return;
+  let est=estoqueAtual();
+  if(!est){ sec.style.display='none'; return; }
+  sec.style.display='';
+  let cap=tonelCapKg(), lim=Number(cfg.estoque_baixo_pct)||20, baixo=est.p1<lim||est.p2<lim;
+  document.getElementById('estTq1').textContent=est.p1.toFixed(0)+'%';
+  document.getElementById('estTq2').textContent=est.p2.toFixed(0)+'%';
+  document.getElementById('estTot').textContent=Math.round(est.kg).toLocaleString('pt-BR');
+  document.getElementById('estPct').textContent=((est.p1+est.p2)/2).toFixed(0)+'%';
+  document.getElementById('estCtx').innerHTML=(baixo?'<b style="color:var(--danger)">⚠️ Estoque baixo</b> (< '+lim+'%) — programar abastecimento. · ':'')+`Tonel 1 ${Math.round(est.p1/100*cap).toLocaleString('pt-BR')} kg · Tonel 2 ${Math.round(est.p2/100*cap).toLocaleString('pt-BR')} kg · ${nToneis()} tonéis × ${cap.toLocaleString('pt-BR')} kg/100% · atualizado ${formatDate(est.quando)} (${est.label}).`;
 }
 
 function renderStatus(){

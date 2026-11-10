@@ -260,13 +260,15 @@ function mediaLton(comb){
   let ini=inicioPeriodoComb(comb);
   let qtd=recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
   let ton=turnos.filter(t=>t.data&&(!ini||t.data>=ini)&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
+  // GÁS: balanço de massa — queimado = recebido − estoque ainda no tanque (inicial 0 em 16/09).
+  if(comb==='gas'){ let est=estoqueAtual(); if(est){ qtd=Math.max(0,qtd-est.kg); } }
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
 function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
 // consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
 function mediaDoDia(comb,data){
-  if(!data) return 0;
+  if(!data||comb==='gas') return 0; // gás usa o balanço de massa (mediaLton/mediaPeriodo); por dia o abastecimento inflaria
   let qtd=recebimentos.filter(r=>r&&r.data===data&&recebComb(r)===comb).reduce((s,r)=>s+recebQtd(r),0);
   if(qtd<=0) return 0;
   let ton=turnos.filter(t=>t&&t.data===data&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
@@ -276,8 +278,16 @@ function mediaDoDia(comb,data){
 // Sem nota no período, cai para a média global (mediaLton) para não ficar em branco.
 function mediaPeriodo(comb){
   comb=comb||combEmFoco();
-  let qtd=recebF().filter(r=>recebComb(r)===comb).reduce((s,r)=>s+recebQtd(r),0);
-  let ton=turnosF().filter(t=>t&&t.data&&compute(t).comb===comb).reduce((s,t)=>s+tonOf(t).ton,0);
+  let recs=recebF().filter(r=>recebComb(r)===comb);
+  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
+  let tts=turnosF().filter(t=>t&&t.data&&compute(t).comb===comb);
+  let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
+  // GÁS: balanço de massa no período — queimado = recebido − variação de estoque entre início e fim do período.
+  if(comb==='gas'&&ton>0){
+    let tss=recs.map(recebTs).concat(tts.map(turnoTs));
+    if(tss.length){ let ini=Math.min.apply(null,tss), fim=Math.max.apply(null,tss);
+      let q=qtd-(estoqueKgEmTs(fim)-estoqueKgEmTs(ini-1)); if(q>=0) return q/ton; }
+  }
   return (ton>0&&qtd>0)?qtd/ton:mediaLton(comb);
 }
 function precoMedio(comb){ comb=comb||combustivelAtual(); let s=0,l=0; recebimentos.forEach(r=>{ if(recebComb(r)!==comb)return; let p=recebPreco(r), q=recebQtd(r); if(p&&isFinite(q)&&q>0){ s+=p*q; l+=q; } }); return l>0?s/l:precoPadrao(comb); }
@@ -311,6 +321,14 @@ function estoqueAtual(){
   if(!cands.length) return null;
   cands.sort((a,b)=>a.ts-b.ts); let c=cands[cands.length-1];
   return {p1:c.p1,p2:c.p2,kg:estoqueLeitura(c.p1,c.p2),quando:c.quando,label:c.label};
+}
+// estoque de gás (kg) num instante ts: passo sobre as leituras ordenadas; 0 antes da 1ª.
+function estoqueKgEmTs(ts){
+  let a=[];
+  turnos.filter(temLeitura).forEach(t=>a.push({ts:turnoTs(t),kg:estoqueLeitura(t.tq1_pct,t.tq2_pct)}));
+  recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)).forEach(r=>a.push({ts:recebTs(r),kg:estoqueLeitura(r.tq1_depois,r.tq2_depois)}));
+  a.sort((x,y)=>x.ts-y.ts);
+  let v=0; for(let i=0;i<a.length;i++){ if(a[i].ts<=ts) v=a[i].kg; else break; } return v;
 }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;

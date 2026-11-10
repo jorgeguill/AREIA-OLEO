@@ -301,13 +301,16 @@ function mediaLton(comb){
   let ini=inicioPeriodoComb(comb);
   let qtd=state.recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
   let ton=state.turnos.filter(t=>t.data&&(!ini||t.data>=ini)&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
+  // GÁS: balanço de massa — queimado = recebido − estoque ainda no tanque (inicial 0 em 16/09).
+  // Sem isso, o recebido a granel (inclusive a nota do dia) infla o kg/ton. Óleo não tem estoque a granel.
+  if(comb==='gas'){ let est=estoqueAtual(); if(est){ qtd=Math.max(0,qtd-est.kg); } }
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
 function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
 // consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
 function mediaDoDia(comb,data){
-  if(!data) return 0;
+  if(!data||comb==='gas') return 0; // gás usa o balanço de massa global (mediaLton); por dia o abastecimento inflaria
   let qtd=state.recebimentos.filter(r=>r&&r.data===data&&recebComb(r)===comb).reduce((s,r)=>s+recebQtd(r),0);
   if(qtd<=0) return 0;
   let ton=state.turnos.filter(t=>t&&t.data===data&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);

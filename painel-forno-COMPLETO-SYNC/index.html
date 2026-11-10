@@ -141,6 +141,17 @@ section{margin-top:22px;}
       </div>
     </div>
   </section>
+  <section id="estoqueSection" style="display:none;">
+    <div class="sec-title">Estoque de gás</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div><div class="card-val" id="estTq1">—</div><div class="card-sub">Tonel 1</div></div>
+        <div><div class="card-val" id="estTq2">—</div><div class="card-sub">Tonel 2</div></div>
+        <div><div class="card-val" id="estTot">—</div><div class="card-sub">Total (kg)</div></div>
+      </div>
+      <div class="card-sub" id="estCtx" style="margin-top:8px;line-height:1.4;"></div>
+    </div>
+  </section>
   <section>
     <div class="sec-title">Últimos registros</div>
     <div class="card"><div id="recentList" style="padding:0;"></div></div>
@@ -177,6 +188,10 @@ section{margin-top:22px;}
     <div class="field"><label id="turnoFuelLabel">Gás consumido no turno (kg)</label><input type="number" step="1" min="0" id="fuelTurnoInput" placeholder="deixe em branco = média automática"></div>
     <div class="field" id="recebInfoWrap" style="margin-top:-4px;"><label id="recebInfoLabel">Gás recebido neste dia (automático)</label><input type="text" id="recebInfo" readonly value="0 kg"></div>
 
+    <div class="subhead" id="turnoTqHead">Leitura dos tonéis (gás)</div>
+    <div class="hint" style="margin-top:0;" id="turnoTqHint">Leia o % dos dois manômetros no INÍCIO do turno. O fim do turno é a leitura do turno seguinte — o consumo é calculado pela queda do estoque.</div>
+    <div class="row2" id="turnoTqWrap"><div class="field"><label>% Tonel 1</label><input type="number" step="1" min="0" max="100" id="tq1Input" placeholder="% manômetro"></div><div class="field"><label>% Tonel 2</label><input type="number" step="1" min="0" max="100" id="tq2Input" placeholder="% manômetro"></div></div>
+
     <div class="subhead">Observações</div>
     <div class="field"><label>Observações do turno</label><textarea name="obs" rows="2" placeholder="paradas, problemas, notas… (opcional)"></textarea></div>
 
@@ -192,7 +207,11 @@ section{margin-top:22px;}
     <div class="field"><label>Combustível</label><div class="chip-group" id="combChipsReceb"><button type="button" class="chip" data-val="gas">Gás (kg)</button><button type="button" class="chip" data-val="oleo">Óleo (L)</button></div><input type="hidden" name="combustivel" value="gas"></div>
     <div class="row2"><div class="field"><label>Data</label><input type="date" name="data" required></div><div class="field"><label>Hora</label><input type="time" name="hora" required></div></div>
     <div id="gasFields">
-      <div class="row2"><div class="field"><label>Quantidade (kg)</label><input type="number" step="1" min="0" name="kg" placeholder="kg da nota"></div><div class="field"><label>Preço por kg (R$)</label><input type="number" step="0.01" min="0" name="preco_kg" placeholder="opcional"></div></div>
+      <div class="row2"><div class="field"><label>Quantidade (kg) — bomba</label><input type="number" step="1" min="0" name="kg" placeholder="kg da bomba/nota"></div><div class="field"><label>Preço por kg (R$)</label><input type="number" step="0.01" min="0" name="preco_kg" placeholder="opcional"></div></div>
+      <div class="subhead">Leitura dos tonéis (antes → depois)</div>
+      <div class="row2"><div class="field"><label>Tonel 1 — antes (%)</label><input type="number" step="1" min="0" max="100" name="tq1_antes" placeholder="% manômetro"></div><div class="field"><label>Tonel 1 — depois (%)</label><input type="number" step="1" min="0" max="100" name="tq1_depois" placeholder="% manômetro"></div></div>
+      <div class="row2"><div class="field"><label>Tonel 2 — antes (%)</label><input type="number" step="1" min="0" max="100" name="tq2_antes" placeholder="% manômetro"></div><div class="field"><label>Tonel 2 — depois (%)</label><input type="number" step="1" min="0" max="100" name="tq2_depois" placeholder="% manômetro"></div></div>
+      <div class="hint" style="margin-top:0;">Leia os dois manômetros antes e depois. Serve para conferir os kg da bomba contra a variação de nível e para calibrar a capacidade.</div>
     </div>
     <div id="oleoFields" style="display:none;">
       <div class="row2"><div class="field"><label>Antes (L)</label><input type="number" step="1" min="0" name="antes"></div><div class="field"><label>Depois (L)</label><input type="number" step="1" min="0" name="depois"></div></div>
@@ -226,13 +245,17 @@ section{margin-top:22px;}
     <div class="row2"><div class="field"><label>Umidade bruta (%)</label><input type="number" step="0.1" min="0" max="50" name="umidade" value="8" required></div><div class="field"><label>Densidade seca (ton/m³)</label><input type="number" step="0.01" min="0.1" name="densidade" value="1.5" required></div></div>
     <div class="row2"><div class="field"><label>m³ por concha</label><input type="number" step="0.01" min="0.1" name="concha_m3" value="2.1" required></div><div class="field"><label>Meta kg/ton (gás)</label><input type="number" step="0.1" min="0.1" name="meta" value="5" required></div></div>
     <div class="field"><label>Tolerância (%)</label><input type="number" step="1" min="1" name="tolerancia" value="15" required></div>
+    <div class="subhead">Tonéis de gás (leitura de tanque)</div>
+    <div class="row2"><div class="field"><label>Capacidade por tonel a 100% (kg)</label><input type="number" step="1" min="1" name="tonel_cap_kg" value="3880" required></div><div class="field"><label>Nº de tonéis</label><input type="number" step="1" min="1" name="n_toneis" value="2" required></div></div>
+    <div class="field"><label>Alerta de estoque baixo (% do tonel)</label><input type="number" step="1" min="1" max="100" name="estoque_baixo_pct" value="20" required></div>
+    <div class="hint">A bomba (kg) calibra o manômetro: ~3.880 kg = 100% de um tonel. O consumo de gás é medido pela queda de estoque entre as leituras.</div>
     <div class="sheet-actions"><button type="button" class="btn btn-secondary" data-close>Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
   </form>
 </div>
 
 <script>
 const TURNOS="turnos",RECEB="recebimentos",CFG="cfg",PARAMS="parametros";
-const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:5,tolerancia:15,concha_m3:2.1};
+const DEFAULT_CFG={apiKey:"AIzaSyB2SIxkvxmB_bqbIbzYSo9Sb5IQxwUTGR0",databaseURL:"https://painel-forno-default-rtdb.firebaseio.com",umidade:8,densidade:1.5,meta:5,tolerancia:15,concha_m3:2.1,tonel_cap_kg:3880,n_toneis:2,estoque_baixo_pct:20};
 const OPERADORES=["Anailson","Livio","William","João Victor","Renato","Rafael"];
 let state={cfg:{...DEFAULT_CFG},turnos:[],recebimentos:[]};
 let firebaseDb=null,useFirebase=false;
@@ -267,15 +290,17 @@ function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.co
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
-// combustível em uso na data: < OLEO_ATE = óleo; ≥ GAS_DESDE = gás; no meio, o do abastecimento mais recente (padrão óleo)
-function combDaData(data){ if(data&&data<OLEO_ATE) return 'oleo'; if(data&&data>=GAS_DESDE) return 'gas'; let rs=state.recebimentos.filter(r=>r&&r.data&&r.data<=data).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?recebComb(rs[rs.length-1]):'oleo'; }
+// combustível em uso na data: forno a óleo até 17/10; passou a GÁS em 18/10 (GAS_DESDE).
+// 15/09–17/10 = óleo mesmo que já houvesse gás ESTOCADO (ex.: abastecimento 23/09 antes da virada):
+// o gás foi recebido/estocado, mas o forno só queimou óleo até 17/10. Turno explícito sempre manda.
+function combDaData(data){ if(!data) return 'oleo'; if(data>=GAS_DESDE) return 'gas'; return 'oleo'; }
 function inicioPeriodoComb(comb){ let ds=state.recebimentos.filter(r=>r&&r.data&&recebComb(r)===comb).map(r=>r.data).sort(); return ds.length?ds[0]:null; }
 // média de consumo do combustível: qtd do combustível ÷ ton seca desde o 1º abastecimento dele (nunca mistura L com kg)
 function mediaLton(comb){
   comb=comb||combustivelAtual();
   let ini=inicioPeriodoComb(comb);
   let qtd=state.recebimentos.filter(r=>recebComb(r)===comb&&(!ini||r.data>=ini)).reduce((s,r)=>s+recebQtd(r),0);
-  let ton=state.turnos.filter(t=>t.data&&(!ini||t.data>=ini)).reduce((s,t)=>s+tonOf(t).ton,0);
+  let ton=state.turnos.filter(t=>t.data&&(!ini||t.data>=ini)&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
@@ -287,6 +312,42 @@ function mediaDoDia(comb,data){
   if(qtd<=0) return 0;
   let ton=state.turnos.filter(t=>t&&t.data===data&&combDoTurno(t)===comb).reduce((s,t)=>s+tonOf(t).ton,0);
   return ton>0?qtd/ton:0;
+}
+// ===== Leitura de tanque: consumo de gás MEDIDO pelo estoque dos tonéis =====
+function tonelCapKg(){ return Number(state.cfg.tonel_cap_kg)||3880; }
+function nToneis(){ return Number(state.cfg.n_toneis)||2; }
+// timestamps para ordenar/cruzar leituras: turno = hora nominal (fim de um turno = início do próximo); recebimento = data+hora
+function turnoTs(t){ let h=t&&t.turno==='Noite'?'22:00':(t&&t.turno==='Tarde'?'14:00':'06:00'); return new Date((t&&t.data||'1970-01-01')+'T'+h+':00').getTime(); }
+function recebTs(r){ return new Date(((r&&r.data)||'1970-01-01')+'T'+((r&&r.hora)||'00:00')+':00').getTime(); }
+function temLeitura(t){ return !!(t&&t.tq1_pct!==undefined&&t.tq1_pct!==''&&t.tq1_pct!==null&&t.tq2_pct!==undefined&&t.tq2_pct!==''&&t.tq2_pct!==null); }
+function estoqueLeitura(p1,p2){ return ((Number(p1)||0)+(Number(p2)||0))/100*tonelCapKg(); }
+function recebDepois(r){ return !!(r&&r.tq1_depois!==undefined&&r.tq1_depois!==''&&r.tq1_depois!==null&&r.tq2_depois!==undefined&&r.tq2_depois!==''&&r.tq2_depois!==null); }
+// gás abastecido (kg) entre dois instantes [ta,tb)
+function gasAbastecidoEntre(ta,tb){ return state.recebimentos.filter(r=>recebComb(r)==='gas').filter(r=>{ let x=recebTs(r); return x>=ta&&x<tb; }).reduce((s,r)=>s+recebQtd(r),0); }
+// passada sobre as leituras ordenadas → mapa id-do-turno → {consumo kg, lton kg/ton}
+let medidoById={};
+function calcMedido(){
+  let map={};
+  let ls=state.turnos.filter(temLeitura).slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
+  for(let i=0;i<ls.length-1;i++){
+    let a=ls[i], b=ls[i+1], ta=turnoTs(a), tb=turnoTs(b);
+    if(!(tb>ta)) continue;
+    let abastecido=gasAbastecidoEntre(ta,tb);
+    let consumo=estoqueLeitura(a.tq1_pct,a.tq2_pct)-estoqueLeitura(b.tq1_pct,b.tq2_pct)+abastecido;
+    // ton seca de todos os turnos no intervalo [a,b) (cobre turnos sem leitura no meio)
+    let ton=state.turnos.filter(t=>{ let x=turnoTs(t); return x>=ta&&x<tb; }).reduce((s,t)=>s+tonOf(t).ton,0);
+    if(consumo>=0&&ton>0.01) map[a.id]={consumo:consumo,lton:consumo/ton};
+  }
+  return map;
+}
+// estoque de gás mais recente (última leitura de turno OU depois de abastecimento)
+function estoqueAtual(){
+  let cands=[];
+  state.turnos.filter(temLeitura).forEach(t=>cands.push({ts:turnoTs(t),p1:Number(t.tq1_pct),p2:Number(t.tq2_pct),quando:t.data,label:'leitura de turno'}));
+  state.recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)).forEach(r=>cands.push({ts:recebTs(r),p1:Number(r.tq1_depois),p2:Number(r.tq2_depois),quando:r.data,label:'após abastecimento'}));
+  if(!cands.length) return null;
+  cands.sort((a,b)=>a.ts-b.ts); let c=cands[cands.length-1];
+  return {p1:c.p1,p2:c.p2,kg:estoqueLeitura(c.p1,c.p2),quando:c.quando,label:c.label};
 }
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
@@ -305,7 +366,10 @@ function compute(t){
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
-  if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
+  // Leitura de tanque: consumo de gás MEDIDO pelo estoque (preferido sobre nota de turno e estimativa)
+  let tkm=(comb==='gas')?medidoById[t.id]:null;
+  if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
+  else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){ let md=mediaDoDia(comb,t.data); let m=md>0?md:mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
@@ -317,6 +381,7 @@ function tempoFmt(min){ if(min==null||isNaN(min))return '—'; let h=Math.floor(
 function updateAlert(c){ if(document.querySelector('.status-dot').classList.contains('err'))return; let box=document.getElementById('alertBox'); if(!c.lton){box.innerHTML='';return;} let meta=state.cfg.meta,tol=state.cfg.tolerancia; let limite=meta*(1+tol/100); if(!c.estimado&&c.lton>limite){ let uc=unidadeCons(c.comb); box.innerHTML=`<div class="alert">⚠️ Consumo acima da meta: ${c.lton.toFixed(2)} ${uc} (meta ${meta} ±${tol}%, limite ${limite.toFixed(2)} ${uc})</div>`; } else{ box.innerHTML=''; } }
 
 function render(){
+  medidoById=calcMedido();
   let turnos=state.turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
   let last=turnos[turnos.length-1],totU=0,totT=0;
   turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
@@ -338,6 +403,15 @@ function render(){
   document.getElementById('totalUmida').textContent=totU.toFixed(1);
   document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);
+  // Estoque de gás (leitura de tanque)
+  let est=estoqueAtual(), es=document.getElementById('estoqueSection');
+  if(est&&es){ es.style.display=''; let cap=tonelCapKg(), lim=Number(state.cfg.estoque_baixo_pct)||20, baixo=est.p1<lim||est.p2<lim;
+    document.getElementById('estTq1').textContent=est.p1.toFixed(0)+'%';
+    document.getElementById('estTq2').textContent=est.p2.toFixed(0)+'%';
+    document.getElementById('estTot').textContent=Math.round(est.kg).toLocaleString('pt-BR');
+    document.getElementById('estCtx').innerHTML=(baixo?'<span style="color:var(--danger)">⚠️ Estoque baixo</span> · ':'')+`Tonel 1 ${Math.round(est.p1/100*cap).toLocaleString('pt-BR')} kg · Tonel 2 ${Math.round(est.p2/100*cap).toLocaleString('pt-BR')} kg · atualizado ${formatDate(est.quando)} (${est.label}).`;
+    if(baixo&&!document.querySelector('.status-dot').classList.contains('err')){ document.getElementById('alertBox').innerHTML+=`<div class="alert">⛽ Estoque de gás baixo: Tonel 1 ${est.p1.toFixed(0)}% · Tonel 2 ${est.p2.toFixed(0)}% (alerta <${lim}%). Programar abastecimento.</div>`; }
+  } else if(es){ es.style.display='none'; }
   let list=document.getElementById('recentList'), html='';
   turnos.slice(-8).reverse().forEach(t=>{ let cc=compute(t); let nl=(Array.isArray(t.lotes)?t.lotes.length:(t.lotes_no_turno||0)); let ncc=turnoConchas(t); let extra=ncc?` • ${ncc} conchas`+(nl?` / ${nl} lotes`:''):''; let org=t.fornecedor_areia?` • ${t.fornecedor_areia}`:''; html+=`<div class="entry"><div class="entry-dot turno"></div><div class="entry-main"><div class="entry-title">${t.turno||''} • ${t.operador||'—'}</div><div class="entry-sub">${formatDate(t.data)} • Silo ${t.silo||'—'}${org}${extra}</div></div><div class="entry-val">${cc.lton?(cc.estimado?'~':'')+cc.lton.toFixed(2)+' '+unidadeCons(cc.comb):'—'}</div></div>`; });
   let rs=state.recebimentos.slice().sort((a,b)=>new Date(a.data+'T'+(a.hora||'00:00'))-new Date(b.data+'T'+(b.hora||'00:00')));
@@ -376,6 +450,8 @@ function setTurnoComb(fuel){
   let nome=fuel==='gas'?'Gás':'Óleo', u=unidadeComb(fuel);
   document.getElementById('turnoFuelLabel').textContent=nome+' consumido no turno ('+u+')';
   document.getElementById('recebInfoLabel').textContent=nome+' recebido neste dia (automático)';
+  let tqShow=(fuel==='gas')?'':'none';
+  ['turnoTqHead','turnoTqHint','turnoTqWrap'].forEach(id=>{ let el=document.getElementById(id); if(el)el.style.display=tqShow; });
   updateRecebidoAuto();
 }
 document.querySelectorAll('#turnoCombChips .chip').forEach(chip=>{ chip.addEventListener('click',()=>setTurnoComb(chip.dataset.val)); });
@@ -400,13 +476,13 @@ function setRecebFuel(fuel){
 }
 document.querySelectorAll('#combChipsReceb .chip').forEach(chip=>{ chip.addEventListener('click',()=>setRecebFuel(chip.dataset.val)); });
 
-document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); document.getElementById('fuelTurnoInput').value=''; setTurnoComb(combustivelAtual()); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
+document.getElementById('btnTurno').addEventListener('click',()=>{ let f=document.getElementById('formTurno'); f.reset(); f.data.value=new Date().toISOString().slice(0,10); let at=autoTurno(); document.querySelectorAll('#turnoChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===at)); f.turno.value=at; document.querySelectorAll('#operadorChips .chip').forEach(c=>c.classList.remove('active')); document.getElementById('operadorOutroWrap').style.display='none'; document.getElementById('operadorOutroInput').value=''; f.operador.value=''; document.querySelectorAll('#origemChips .chip').forEach(c=>c.classList.remove('active')); f.fornecedor_areia.value=''; document.querySelectorAll('#siloChips .chip').forEach(c=>c.classList.remove('active')); f.silo.value=''; lotes=[{ini:nowHM(),fim:'',conchas:''}]; renderLotes(); document.getElementById('fuelTurnoInput').value=''; document.getElementById('tq1Input').value=''; document.getElementById('tq2Input').value=''; setTurnoComb(combustivelAtual()); document.getElementById('sheetTurno').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 document.querySelector('#formTurno [name=data]').addEventListener('change',updateRecebidoAuto);
 document.getElementById('btnAddLote').addEventListener('click',addLote);
 
 document.getElementById('btnReceb').addEventListener('click',()=>{ let f=document.getElementById('formReceb'); f.reset(); document.querySelectorAll('#combChips .chip,#aguaChips .chip').forEach(c=>c.classList.remove('active')); document.querySelector('#formReceb [name=data]').value=new Date().toISOString().slice(0,10); document.querySelector('#formReceb [name=hora]').value=new Date().toTimeString().slice(0,5); setRecebFuel(combustivelAtual()); document.getElementById('sheetReceb').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 
-document.getElementById('btnConfig').addEventListener('click',()=>{ let f=document.getElementById('formConfig'); f.apiKey.value=state.cfg.apiKey||''; f.databaseURL.value=state.cfg.databaseURL||''; f.umidade.value=state.cfg.umidade; f.densidade.value=state.cfg.densidade; f.concha_m3.value=state.cfg.concha_m3||2.1; f.meta.value=state.cfg.meta; f.tolerancia.value=state.cfg.tolerancia; document.getElementById('sheetConfig').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
+document.getElementById('btnConfig').addEventListener('click',()=>{ let f=document.getElementById('formConfig'); f.apiKey.value=state.cfg.apiKey||''; f.databaseURL.value=state.cfg.databaseURL||''; f.umidade.value=state.cfg.umidade; f.densidade.value=state.cfg.densidade; f.concha_m3.value=state.cfg.concha_m3||2.1; f.meta.value=state.cfg.meta; f.tolerancia.value=state.cfg.tolerancia; f.tonel_cap_kg.value=state.cfg.tonel_cap_kg||3880; f.n_toneis.value=state.cfg.n_toneis||2; f.estoque_baixo_pct.value=state.cfg.estoque_baixo_pct||20; document.getElementById('sheetConfig').classList.add('open'); document.getElementById('overlay').classList.add('open'); });
 function close(){ document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open')); document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click',close);
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',close));
@@ -429,7 +505,8 @@ document.getElementById('formTurno').addEventListener('submit',e=>{
   let m3u=+(tc*conchaM3()).toFixed(1);
   let tempoTotal=ll.reduce((s,l)=>s+(l.tempo_min||0),0);
   let entry={data:f.data.value,turno:f.turno.value,operador:f.operador.value,fornecedor_areia:f.fornecedor_areia.value,silo:f.silo.value,lotes:ll,conchas:tc,m3_umida:m3u,tempo_secagem_min:tempoTotal,origem:'app'};
-  { let uf=f.turno_combustivel.value||combustivelAtual(); entry.combustivel=uf; let fv=document.getElementById('fuelTurnoInput').value; if(fv!==''){ if(uf==='gas') entry.gas_kg=Number(fv); else entry.oleo_consumido=Number(fv); } }
+  { let uf=f.turno_combustivel.value||combustivelAtual(); entry.combustivel=uf; let fv=document.getElementById('fuelTurnoInput').value; if(fv!==''){ if(uf==='gas') entry.gas_kg=Number(fv); else entry.oleo_consumido=Number(fv); }
+    if(uf==='gas'){ let t1=document.getElementById('tq1Input').value, t2=document.getElementById('tq2Input').value; if(t1!=='') entry.tq1_pct=Number(t1); if(t2!=='') entry.tq2_pct=Number(t2); } }
   if(f.obs.value.trim()) entry.obs=f.obs.value.trim();
   addEntry(TURNOS,entry);
   close();
@@ -443,9 +520,16 @@ document.getElementById('formReceb').addEventListener('submit',e=>{
   if(!f.fornecedor.value){alert('Selecione o fornecedor.');return;}
   let entry={data:f.data.value,hora:f.hora.value,combustivel:fuel,fornecedor:f.fornecedor.value,recebedor:f.recebedor.value};
   if(fuel==='gas'){
-    if(f.kg.value===''||Number(f.kg.value)<=0){alert('Informe a quantidade de gás (kg) da nota.');return;}
+    if(f.kg.value===''||Number(f.kg.value)<=0){alert('Informe a quantidade de gás (kg) da bomba/nota.');return;}
     entry.kg=Number(f.kg.value);
     if(f.preco_kg.value!=='') entry.preco_kg=Number(f.preco_kg.value);
+    ['tq1_antes','tq1_depois','tq2_antes','tq2_depois'].forEach(k=>{ if(f[k].value!=='') entry[k]=Number(f[k].value); });
+    // conferência: kg da bomba ≈ variação de nível × capacidade do tonel
+    if(['tq1_antes','tq1_depois','tq2_antes','tq2_depois'].every(k=>entry[k]!==undefined)){
+      let cap=tonelCapKg(), esperado=((entry.tq1_depois-entry.tq1_antes)+(entry.tq2_depois-entry.tq2_antes))/100*cap;
+      if(esperado>0&&entry.kg>0){ let dif=Math.abs(esperado-entry.kg)/entry.kg;
+        if(dif>0.15&&!confirm(`Atenção: a bomba diz ${entry.kg} kg, mas a variação de nível equivale a ~${esperado.toFixed(0)} kg (difere ${(dif*100).toFixed(0)}%). Confira as leituras. Salvar mesmo assim?`)) return; }
+    }
   } else {
     if(f.antes.value===''||f.depois.value===''){alert('Informe antes e depois (L) do tanque.');return;}
     entry.antes=Number(f.antes.value); entry.depois=Number(f.depois.value);
@@ -466,7 +550,7 @@ document.getElementById('formConfig').addEventListener('submit',e=>{
   e.preventDefault();
   let f=e.target;
   let creds={apiKey:f.apiKey.value,databaseURL:f.databaseURL.value};
-  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),concha_m3:Number(f.concha_m3.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value)};
+  let params={umidade:Number(f.umidade.value),densidade:Number(f.densidade.value),concha_m3:Number(f.concha_m3.value),meta:Number(f.meta.value),tolerancia:Number(f.tolerancia.value),tonel_cap_kg:Number(f.tonel_cap_kg.value),n_toneis:Number(f.n_toneis.value),estoque_baixo_pct:Number(f.estoque_baixo_pct.value)};
   state.cfg={...creds,...params};
   save(CFG,state.cfg);
   close();

@@ -352,6 +352,37 @@ function estoqueAtual(){
   cands.sort((a,b)=>a.ts-b.ts); let c=cands[cands.length-1];
   return {p1:c.p1,p2:c.p2,kg:estoqueLeitura(c.p1,c.p2),quando:c.quando,label:c.label};
 }
+// estoque de gás (kg) num instante ts: passo sobre as leituras ordenadas; 0 antes da 1ª.
+function estoqueKgEmTs(ts){
+  let a=[];
+  state.turnos.filter(temLeitura).forEach(t=>a.push({ts:turnoTs(t),kg:estoqueLeitura(t.tq1_pct,t.tq2_pct)}));
+  state.recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)).forEach(r=>a.push({ts:recebTs(r),kg:estoqueLeitura(r.tq1_depois,r.tq2_depois)}));
+  a.sort((x,y)=>x.ts-y.ts);
+  let v=0; for(let i=0;i<a.length;i++){ if(a[i].ts<=ts) v=a[i].kg; else break; } return v;
+}
+// Consumo REPRESENTATIVO de um mês (YYYY-MM): balanço de massa do gás no mês (recebido − variação de
+// estoque) ÷ ton de gás do mês. Evita a média da vida toda, distorcida pela transição de out/2026.
+function mediaMes(comb,mes){
+  comb=comb||combustivelAtual();
+  if(!mes) return mediaLton(comb);
+  let recs=state.recebimentos.filter(r=>recebComb(r)===comb&&r.data&&r.data.slice(0,7)===mes);
+  let tts=state.turnos.filter(t=>t&&t.data&&t.data.slice(0,7)===mes&&combDoTurno(t)===comb);
+  let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
+  if(ton<=0) return mediaLton(comb);
+  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
+  if(comb==='gas'){
+    let tss=recs.map(recebTs).concat(tts.map(turnoTs));
+    if(tss.length){ let ini=Math.min.apply(null,tss), fim=Math.max.apply(null,tss);
+      let q=qtd-(estoqueKgEmTs(fim)-estoqueKgEmTs(ini-1)); if(q>=0) return q/ton; }
+  }
+  return qtd>0?qtd/ton:mediaLton(comb);
+}
+// mês mais recente com turno do combustível → consumo representativo "de agora".
+function mediaRecente(comb){
+  comb=comb||combustivelAtual();
+  let ms=state.turnos.filter(t=>t&&t.data&&combDoTurno(t)===comb).map(t=>t.data.slice(0,7));
+  return ms.length?mediaMes(comb,ms.sort()[ms.length-1]):mediaLton(comb);
+}
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
@@ -373,7 +404,11 @@ function compute(t){
   let tkm=(comb==='gas')?medidoById[t.id]:null;
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
-  else if(!lton&&ton>0.01){ let md=mediaDoDia(comb,t.data); let m=md>0?md:mediaLton(comb); if(m>0){ lton=m; oleo=ton*m; estimado=true; } }
+  else if(!lton&&ton>0.01){
+    // estimativa: GÁS usa o balanço de massa do MÊS do turno (representativo); óleo mantém o diário/global.
+    let m=(comb==='gas')?mediaMes(comb,(t.data||'').slice(0,7)):(mediaDoDia(comb,t.data)||mediaLton(comb));
+    if(m>0){ lton=m; oleo=ton*m; estimado=true; }
+  }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }
 
@@ -394,7 +429,7 @@ function render(){
   let meta=state.cfg.meta||5,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
   // valor do medidor: último turno; se vier vazio, cai para a média geral (nunca fica em branco havendo dados)
   let gv=c.lton, gEst=c.estimado;
-  if(gv==null){ let m=mediaLton(UA); if(m>0){ gv=m; gEst=true; } }
+  if(gv==null){ let m=mediaRecente(UA); if(m>0){ gv=m; gEst=true; } }
   let scaleMax=Math.max(meta*2.5,limite*1.2,(gv||0)*1.1);
   let goodDeg=Math.min(270,(meta/scaleMax)*270), amberDeg=Math.min(270,(limite/scaleMax)*270);
   document.getElementById('gaugeTrack').style.background=`conic-gradient(from -135deg, var(--good) 0deg ${goodDeg}deg, var(--amber) ${goodDeg}deg ${amberDeg}deg, var(--danger) ${amberDeg}deg 270deg)`;

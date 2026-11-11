@@ -315,7 +315,7 @@ function calcMedido(){
     let consumo=estoqueLeitura(a.tq1_pct,a.tq2_pct)-estoqueLeitura(b.tq1_pct,b.tq2_pct)+abastecido;
     let ton=turnos.filter(t=>{ let x=turnoTs(t); return x>=ta&&x<tb; }).reduce((s,t)=>s+tonOf(t).ton,0);
     // Medido por turno só vale em intervalo SEM abastecimento (refil distorce) e com valor plausível; senão, estimativa do mês.
-    if(consumo>=0&&ton>0.01&&abastecido<1){ let lt=consumo/ton; if(lt<=(Number(cfg.meta)||5)*4) map[a.id]={consumo:consumo,lton:lt}; }
+    if(consumo>=0&&ton>0.01&&abastecido<1){ let lt=consumo/ton; if(lt<=(Number(cfg.meta)||5)*4) map[a.id]={consumo:consumo,ton:ton,lton:lt}; }
   }
   return map;
 }
@@ -351,20 +351,14 @@ function mediaMes(comb,mes){
   }
   return qtd>0?qtd/ton:mediaLton(comb);
 }
-// Consumo do PERÍODO MEDIDO (data >= MEDICAO_DESDE): balanço de massa entre a 1ª e a última leitura do período. Só gás.
+// Consumo do PERÍODO MEDIDO (data >= MEDICAO_DESDE): média dos consumos MEDIDOS LIMPOS por turno
+// (calcMedido já exclui trechos com refil e valores absurdos) → um abastecimento NUNCA entra no número. Só gás.
 function mediaMedida(comb){
   comb=comb||combustivelAtual();
   if(comb!=='gas') return 0;
-  let reads=[];
-  turnos.filter(t=>temLeitura(t)&&t.data&&t.data>=MEDICAO_DESDE).forEach(t=>reads.push({ts:turnoTs(t),kg:estoqueLeitura(t.tq1_pct,t.tq2_pct)}));
-  recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)&&r.data&&r.data>=MEDICAO_DESDE).forEach(r=>reads.push({ts:recebTs(r),kg:estoqueLeitura(r.tq1_depois,r.tq2_depois)}));
-  reads.sort((a,b)=>a.ts-b.ts);
-  if(reads.length<2) return 0;
-  let ini=reads[0], fim=reads[reads.length-1];
-  let abastecido=recebimentos.filter(r=>recebComb(r)==='gas').filter(r=>{ let x=recebTs(r); return x>ini.ts&&x<=fim.ts; }).reduce((s,r)=>s+recebQtd(r),0);
-  let consumed=ini.kg-fim.kg+abastecido;
-  let ton=turnos.filter(t=>{ let x=turnoTs(t); return x>=ini.ts&&x<fim.ts&&combDoTurno(t)==='gas'; }).reduce((s,t)=>s+tonOf(t).ton,0);
-  return (consumed>=0&&ton>0)?consumed/ton:0;
+  let m=medidoById||{}, consumo=0, ton=0;
+  turnos.forEach(t=>{ if(t&&t.data&&t.data>=MEDICAO_DESDE&&m[t.id]){ consumo+=m[t.id].consumo; ton+=(m[t.id].ton||0); } });
+  return ton>0?consumo/ton:0;
 }
 function mediaRecente(comb){
   comb=comb||combustivelAtual();

@@ -290,6 +290,7 @@ function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.co
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
+const MEDICAO_DESDE='2026-11-10'; // desde esta data a leitura real dos tonéis é lançada por turno → usar o MEDIDO, não a média do período anterior
 // combustível em uso na data: forno a óleo até 17/10; passou a GÁS em 18/10 (GAS_DESDE).
 // 15/09–17/10 = óleo mesmo que já houvesse gás ESTOCADO (ex.: abastecimento 23/09 antes da virada):
 // o gás foi recebido/estocado, mas o forno só queimou óleo até 17/10. Turno explícito sempre manda.
@@ -380,9 +381,27 @@ function mediaMes(comb,mes){
   }
   return qtd>0?qtd/ton:mediaLton(comb);
 }
-// mês mais recente com turno do combustível → consumo representativo "de agora".
+// Consumo do PERÍODO MEDIDO (data >= MEDICAO_DESDE): balanço de massa entre a 1ª e a última leitura do
+// período (gás queimado = estoque_1ª − estoque_última + abastecido no meio) ÷ ton de gás no intervalo.
+// De 10/11 em diante NÃO puxa a média do período anterior (granel/sem leitura). Só gás.
+function mediaMedida(comb){
+  comb=comb||combustivelAtual();
+  if(comb!=='gas') return 0;
+  let reads=[];
+  state.turnos.filter(t=>temLeitura(t)&&t.data&&t.data>=MEDICAO_DESDE).forEach(t=>reads.push({ts:turnoTs(t),kg:estoqueLeitura(t.tq1_pct,t.tq2_pct)}));
+  state.recebimentos.filter(r=>recebComb(r)==='gas'&&recebDepois(r)&&r.data&&r.data>=MEDICAO_DESDE).forEach(r=>reads.push({ts:recebTs(r),kg:estoqueLeitura(r.tq1_depois,r.tq2_depois)}));
+  reads.sort((a,b)=>a.ts-b.ts);
+  if(reads.length<2) return 0;
+  let ini=reads[0], fim=reads[reads.length-1];
+  let abastecido=state.recebimentos.filter(r=>recebComb(r)==='gas').filter(r=>{ let x=recebTs(r); return x>ini.ts&&x<=fim.ts; }).reduce((s,r)=>s+recebQtd(r),0);
+  let consumed=ini.kg-fim.kg+abastecido;
+  let ton=state.turnos.filter(t=>{ let x=turnoTs(t); return x>=ini.ts&&x<fim.ts&&combDoTurno(t)==='gas'; }).reduce((s,t)=>s+tonOf(t).ton,0);
+  return (consumed>=0&&ton>0)?consumed/ton:0;
+}
+// consumo representativo "de agora": gás usa o período MEDIDO (>=10/11); senão, o mês mais recente.
 function mediaRecente(comb){
   comb=comb||combustivelAtual();
+  if(comb==='gas'){ let m=mediaMedida(comb); if(m>0) return m; }
   let ms=state.turnos.filter(t=>t&&t.data&&combDoTurno(t)===comb).map(t=>t.data.slice(0,7));
   return ms.length?mediaMes(comb,ms.sort()[ms.length-1]):mediaLton(comb);
 }
@@ -408,8 +427,11 @@ function compute(t){
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){
-    // estimativa: GÁS usa o balanço de massa do MÊS do turno (representativo); óleo mantém o diário/global.
-    let m=(comb==='gas')?mediaMes(comb,(t.data||'').slice(0,7)):(mediaDoDia(comb,t.data)||mediaLton(comb));
+    // estimativa do GÁS: de 10/11 em diante usa o período MEDIDO (não a média do período anterior);
+    // antes de 10/11, o mês do turno. Óleo mantém o diário/global.
+    let m;
+    if(comb==='gas'){ let mes=(t.data||'').slice(0,7); m=((t.data||'')>=MEDICAO_DESDE)?(mediaMedida(comb)||mediaMes(comb,mes)):mediaMes(comb,mes); }
+    else { m=mediaDoDia(comb,t.data)||mediaLton(comb); }
     if(m>0){ lton=m; oleo=ton*m; estimado=true; }
   }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};

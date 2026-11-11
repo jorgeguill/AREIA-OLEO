@@ -339,7 +339,10 @@ function calcMedido(){
     let consumo=estoqueLeitura(a.tq1_pct,a.tq2_pct)-estoqueLeitura(b.tq1_pct,b.tq2_pct)+abastecido;
     // ton seca de todos os turnos no intervalo [a,b) (cobre turnos sem leitura no meio)
     let ton=state.turnos.filter(t=>{ let x=turnoTs(t); return x>=ta&&x<tb; }).reduce((s,t)=>s+tonOf(t).ton,0);
-    if(consumo>=0&&ton>0.01) map[a.id]={consumo:consumo,lton:consumo/ton};
+    // Só confia no MEDIDO por turno quando o intervalo NÃO teve abastecimento (um refil no meio
+    // joga milhares de kg no consumo de um turno só → pico falso) e quando o valor é plausível.
+    // No turno do refil, cai na estimativa do mês (compute → mediaMes).
+    if(consumo>=0&&ton>0.01&&abastecido<1){ let lt=consumo/ton; if(lt<=(Number(state.cfg.meta)||5)*4) map[a.id]={consumo:consumo,lton:lt}; }
   }
   return map;
 }

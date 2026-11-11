@@ -237,7 +237,7 @@ function unidadeComb(c){ return c==='gas'?'kg':'L'; }
 function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
 function combLabel(c){ return c==='gas'?'gás':'óleo'; }
-function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>recebTs(a)-recebTs(b)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
@@ -492,7 +492,7 @@ function renderCusto(){
 }
 function renderOleoSupply(){
   let ua=combEmFoco(), u=unidadeComb(ua), nome=combLabel(ua);
-  let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>recebTs(a)-recebTs(b));
   let al=document.getElementById('oleoAlerta');
   let totalRec=recebimentos.filter(r=>recebComb(r)===ua).reduce((s,r)=>s+(recebQtd(r)||0),0);
   _set('oleoTotal',totalRec.toLocaleString('pt-BR',{maximumFractionDigits:0}));
@@ -577,7 +577,7 @@ function renderStats(){
   let dentro=ltons.filter(v=>v<=limite).length;
   document.getElementById('statDentroMeta').textContent=ltons.length?`${Math.round(dentro/ltons.length*100)}%`:'—';
 
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let last=sorted[sorted.length-1];
   let lastC=last?compute(last):null;
   document.getElementById('statUltimoLton').textContent=lastC&&lastC.lton?lastC.lton.toFixed(2):'—';
@@ -596,7 +596,7 @@ function renderEstoque(){
 }
 
 function renderStatus(){
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let last=sorted[sorted.length-1];
   let info=document.getElementById('statusInfo');
   let pillWrap=document.getElementById('statusPill');
@@ -618,7 +618,7 @@ function renderStatus(){
 
 function renderCharts(){
   const turnos=turnosF(), recebimentos=recebF();
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
   let UA=combEmFoco(), UC=unidadeCons(UA), U=unidadeComb(UA);
   let ltonData=sorted.map(t=>{let c=compute(t);return (c.comb===UA&&c.lton)?+c.lton.toFixed(2):null;});
@@ -659,7 +659,7 @@ function renderCharts(){
 }
 
 function renderTurnosTable(){
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let tbody=document.querySelector('#tblTurnos tbody');
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t); let nc=turnoConchas(t);

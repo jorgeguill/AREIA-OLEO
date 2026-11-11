@@ -238,7 +238,7 @@ function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.p
 function unidadeComb(c){ return c==='gas'?'kg':'L'; }
 function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
-function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>recebTs(a)-recebTs(b)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
@@ -513,7 +513,7 @@ function renderCusto(){
 // Cadência de abastecimento (all-time; alerta se está demorando mais que a média)
 function renderOleoSupply(){
   let ua=combEmFoco(), u=unidadeComb(ua), nome=combLabel(ua);
-  let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let rs=recebimentos.filter(r=>r.data&&recebComb(r)===ua).slice().sort((a,b)=>recebTs(a)-recebTs(b));
   let al=document.getElementById('oleoAlerta');
   if(!rs.length){ _set('oleoUltimo','—'); _set('oleoDias','—'); _set('oleoInterv','—'); if(al)al.style.display='none'; return; }
   let last=rs[rs.length-1];
@@ -600,7 +600,7 @@ function renderEstoque(){
 
 function renderCharts(){
   const turnos=turnosF(), recebimentos=recebF();
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
   let UA=combEmFoco(), UC=unidadeCons(UA), U=unidadeComb(UA);
   let ltonData=sorted.map(t=>{let c=compute(t);return (c.comb===UA&&c.lton)?+c.lton.toFixed(2):null;});
@@ -646,12 +646,12 @@ function toCSV(rows){ return rows.map(r=>r.map(csvEsc).join(';')).join('\n'); }
 function baixarCSV(nome,rows){ let blob=new Blob(['﻿'+toCSV(rows)],{type:'text/csv;charset=utf-8;'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); a.remove(); }
 function exportTurnos(){
   let rows=[['Data','Turno','Operador','Origem','m3_umida','ton_seca','Silo','Conchas','Tempo_min','Combustivel','Qtd','Unid','Consumo_un_ton','Custo_R$','Obs']];
-  turnosF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t),pm=precoMedio(c.comb),u=unidadeComb(c.comb); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),combLabel(c.comb),(isFinite(c.oleo)?c.oleo.toFixed(0):''),u,(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
+  turnosF().slice().sort((a,b)=>turnoTs(a)-turnoTs(b)).forEach(t=>{ let c=compute(t),tm=tempoTurno(t),pm=precoMedio(c.comb),u=unidadeComb(c.comb); rows.push([t.data,t.turno||'',normOp(t.operador)||t.operador||'',t.fornecedor_areia||'',(c.m3u||0).toFixed(1),(c.ton||0).toFixed(1),t.silo||'',turnoConchas(t)||'',(tm!=null?tm:''),combLabel(c.comb),(isFinite(c.oleo)?c.oleo.toFixed(0):''),u,(c.lton?c.lton.toFixed(2):''),(isFinite(c.oleo)?(c.oleo*pm).toFixed(2):''),t.obs||'']); });
   baixarCSV('turnos_'+(mesFiltro||'todos')+'.csv',rows);
 }
 function exportReceb(){
   let rows=[['Data','Hora','Combustivel','Qtd','Unid','Preco_un_R$','Total_R$','Fornecedor','Recebedor']];
-  recebF().slice().sort((a,b)=>new Date(a.data)-new Date(b.data)).forEach(r=>{ let comb=recebComb(r),q=recebQtd(r)||0,p=recebPreco(r),u=unidadeComb(comb); rows.push([r.data,r.hora||'',combLabel(comb),q,u,(p!=null?p.toFixed(2):''),(p!=null?(p*q).toFixed(2):''),r.fornecedor||'',r.recebedor||'']); });
+  recebF().slice().sort((a,b)=>recebTs(a)-recebTs(b)).forEach(r=>{ let comb=recebComb(r),q=recebQtd(r)||0,p=recebPreco(r),u=unidadeComb(comb); rows.push([r.data,r.hora||'',combLabel(comb),q,u,(p!=null?p.toFixed(2):''),(p!=null?(p*q).toFixed(2):''),r.fornecedor||'',r.recebedor||'']); });
   baixarCSV('recebimentos_'+(mesFiltro||'todos')+'.csv',rows);
 }
 async function padronizarNomes(){
@@ -664,7 +664,7 @@ async function padronizarNomes(){
 }
 
 function renderTurnosTable(){
-  let sorted=turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let tbody=document.querySelector('#tblTurnos tbody');
   tbody.innerHTML=sorted.map(t=>{
     let c=compute(t); let nc=turnoConchas(t);

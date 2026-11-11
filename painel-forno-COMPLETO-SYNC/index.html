@@ -286,7 +286,7 @@ function unidadeComb(c){ return c==='gas'?'kg':'L'; }
 function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
 // combustível atual = o do abastecimento mais recente (padrão gás, pois a mudança atual é para gás)
-function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>new Date(a.data)-new Date(b.data)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
+function combustivelAtual(){ let rs=state.recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>recebTs(a)-recebTs(b)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
 const OLEO_ATE='2026-09-15';
 const GAS_DESDE='2026-10-18'; // virada real da secagem p/ gás: turno sem combustível explícito a partir daqui = gás
@@ -420,7 +420,7 @@ function updateAlert(c){ if(document.querySelector('.status-dot').classList.cont
 
 function render(){
   medidoById=calcMedido();
-  let turnos=state.turnos.slice().sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let turnos=state.turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let last=turnos[turnos.length-1],totU=0,totT=0;
   turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
   let c=last?compute(last):{lton:null};

@@ -312,7 +312,8 @@ function calcMedido(){
     let abastecido=gasAbastecidoEntre(ta,tb);
     let consumo=estoqueLeitura(a.tq1_pct,a.tq2_pct)-estoqueLeitura(b.tq1_pct,b.tq2_pct)+abastecido;
     let ton=turnos.filter(t=>{ let x=turnoTs(t); return x>=ta&&x<tb; }).reduce((s,t)=>s+tonOf(t).ton,0);
-    // Medido por turno só vale em intervalo SEM abastecimento (refil distorce) e com valor plausível; senão, estimativa do mês.
+    // Medido por turno só vale em intervalo SEM abastecimento: num refil o descasamento manômetro(%×cap)×bomba(kg)
+    // domina a queima do turno e vira lixo. O turno do refil cai na mediaMedida (trechos limpos). Teto (meta×4) barra absurdos. Ver FASE 1.7.
     if(consumo>=0&&ton>0.01&&abastecido<1){ let lt=consumo/ton; if(lt<=(Number(cfg.meta)||5)*4) map[a.id]={consumo:consumo,ton:ton,lton:lt}; }
   }
   return map;
@@ -381,7 +382,7 @@ function compute(t){
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
-  let tkm=(comb==='gas')?medidoById[t.id]:null;
+  let tkm=(comb==='gas'&&(t.data||'')>=MEDICAO_DESDE)?medidoById[t.id]:null;
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){

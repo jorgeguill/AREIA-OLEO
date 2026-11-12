@@ -89,6 +89,11 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--pan
   </div>
 </section>
 
+<section id="secCombustivel" style="display:none;">
+  <h2>Consumo por combustível</h2>
+  <div class="card" id="cardCombustivel"></div>
+</section>
+
 <section id="secEstoque" style="display:none;">
   <h2>Estoque de gás (tonéis)</h2>
   <div class="grid4">
@@ -446,13 +451,14 @@ function fillMesSel(){
   sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
   sel.value=cur; mesFiltro=cur; sel.dataset.init='1';
 }
-document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; aplicaRotulos(); renderStats(); renderEstoque(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
+document.getElementById('mesSel').addEventListener('change',e=>{ mesFiltro=e.target.value; aplicaRotulos(); renderStats(); renderConsumoComb(); renderEstoque(); renderCharts(); renderColab(); renderCusto(); renderParadas(); renderOleoSupply(); renderComparativos(); });
 
 function renderAll(){
   medidoById=calcMedido();
   aplicaRotulos();
   fillMesSel();
   renderStats();
+  renderConsumoComb();
   renderEstoque();
   renderCusto();
   renderOleoSupply();
@@ -596,6 +602,32 @@ function renderStats(){
   let last=sorted[sorted.length-1];
   let lastC=last?compute(last):null;
   document.getElementById('statUltimoLton').textContent=lastC&&lastC.lton?lastC.lton.toFixed(2):'—';
+}
+// Resumo de consumo POR COMBUSTÍVEL no período em foco. Óleo (L/ton) e gás (kg/ton) só coexistem na
+// transição (óleo até 17/10, gás de 18/10). Cada um na sua unidade — nunca mistura L com kg.
+function renderConsumoComb(){
+  let sec=document.getElementById('secCombustivel'), box=document.getElementById('cardCombustivel');
+  if(!sec||!box) return;
+  const tts=turnosF();
+  let agg={oleo:{comb:0,ton:0,n:0,est:0,med:0}, gas:{comb:0,ton:0,n:0,est:0,med:0}};
+  tts.forEach(t=>{ let c=compute(t); if(c.comb!=='gas'&&c.comb!=='oleo')return; let a=agg[c.comb];
+    a.n++; a.ton+=(c.ton||0); if(isFinite(c.oleo)) a.comb+=c.oleo;
+    if(c.lton){ if(c.estimado) a.est++; else a.med++; } });
+  let fuels=['oleo','gas'].filter(f=>agg[f].n>0 && agg[f].ton>0.01);
+  if(!fuels.length){ sec.style.display='none'; return; }
+  sec.style.display='';
+  let rows=fuels.map(f=>{
+    let a=agg[f], lton=a.ton>0?a.comb/a.ton:0, uc=unidadeCons(f), u=unidadeComb(f), nome=combLabel(f).toUpperCase();
+    let temMed=a.med>0, temEst=a.est>0;
+    let fonte=(temMed&&temEst)?'estimado + medido':(temMed?'medido':'estimado');
+    let pref=(!temMed&&temEst)?'~':'';
+    let pm=precoMedio(f), custoTon=lton*pm;
+    return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;border-top:1px solid var(--line);">`
+      +`<div><b style="font-size:15px;">${nome}</b> <span style="font-size:11px;color:var(--muted);">(${fonte})</span></div>`
+      +`<div style="text-align:right;"><div style="font-size:18px;font-weight:700;">${pref}${lton.toFixed(2)} <span style="font-size:12px;color:var(--muted);">${uc}</span></div>`
+      +`<div style="font-size:11px;color:var(--muted);">${a.comb.toLocaleString('pt-BR',{maximumFractionDigits:0})} ${u} · ${a.ton.toLocaleString('pt-BR',{maximumFractionDigits:0})} ton seca · ${brl(custoTon)}/ton</div></div></div>`;
+  }).join('');
+  box.innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Óleo até 17/10 · gás estimado 18/10–09/11 · gás medido de 10/11</div>`+rows;
 }
 function renderEstoque(){
   let sec=document.getElementById('secEstoque'); if(!sec)return;

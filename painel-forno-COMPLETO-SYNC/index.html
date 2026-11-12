@@ -402,10 +402,11 @@ function mediaGasEstPeriodo(){
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;
   let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
-  let tss=recs.map(recebTs).concat(tts.map(turnoTs));
-  if(tss.length){ let a=Math.min.apply(null,tss), b=Math.max.apply(null,tss);
-    let q=qtd-(estoqueKgEmTs(b)-estoqueKgEmTs(a-1)); if(q>=0) return q/ton; }
-  return qtd>0?qtd/ton:0;
+  // NÃO contar o SALDO existente no tanque: o gás recebido que ainda está no tonel não foi queimado.
+  // Desconta o estoque atual (igual à média geral) → a estimativa reflete só o que foi consumido.
+  let est=estoqueAtual(); let saldo=est?est.kg:0;
+  let q=qtd-saldo; if(q<0)q=0;
+  return q>0?q/ton:0;
 }
 // consumo representativo "de agora": gás usa o período MEDIDO (>=10/11); senão, o mês mais recente.
 function mediaRecente(comb){

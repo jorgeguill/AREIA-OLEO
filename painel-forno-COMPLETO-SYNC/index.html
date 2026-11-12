@@ -401,10 +401,11 @@ function mediaGasEstPeriodo(){
   let tts=state.turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;
-  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
-  // NÃO contar o SALDO existente no tanque: o gás recebido que ainda está no tonel não foi queimado.
-  // Desconta o estoque atual (igual à média geral) → a estimativa reflete só o que foi consumido.
-  let est=estoqueAtual(); let saldo=est?est.kg:0;
+  let ord=recs.slice().sort((a,b)=>recebTs(a)-recebTs(b));
+  let qtd=ord.reduce((s,r)=>s+recebQtd(r),0);
+  // "saldo no tanque" = o ÚLTIMO abastecimento do período (o gás mais novo, ainda não queimado = o do dia 9).
+  // Desconta para NÃO contar o estoque como consumido (Jorge: recebido no período − o do dia 9) ÷ ton do período.
+  let saldo=ord.length?recebQtd(ord[ord.length-1]):0;
   let q=qtd-saldo; if(q<0)q=0;
   return q>0?q/ton:0;
 }

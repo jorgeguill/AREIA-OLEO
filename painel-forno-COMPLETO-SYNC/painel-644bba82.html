@@ -242,6 +242,8 @@ function recebQtd(r){ if(!r)return 0; if(recebComb(r)==='gas') return Number(r.k
 function recebPreco(r){ if(!r)return null; let p=recebComb(r)==='gas'?Number(r.preco_kg):Number(r.preco_litro); return (isFinite(p)&&p>0)?p:null; }
 function unidadeComb(c){ return c==='gas'?'kg':'L'; }
 function unidadeCons(c){ return c==='gas'?'kg/ton':'L/ton'; }
+// meta por combustível: gás usa cfg.meta (3,3); óleo usa cfg.meta_oleo ou 8 L/ton (histórico)
+function metaDe(c){ return c==='oleo' ? (Number(cfg.meta_oleo)||8) : (Number(cfg.meta)||3.3); }
 function precoPadrao(c){ return c==='gas'?5.60:2.50; }
 function combustivelAtual(){ let rs=recebimentos.filter(r=>r&&r.data&&r.combustivel).slice().sort((a,b)=>recebTs(a)-recebTs(b)); return rs.length?rs[rs.length-1].combustivel:'gas'; }
 // Piso histórico: todo turno/data antes disto é óleo por padrão (período sem gás; blinda contra nota de gás com data retroativa).
@@ -650,19 +652,43 @@ function renderCharts(){
   let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
   let labels=sorted.map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3));
   let UA=combEmFoco(), UC=unidadeCons(UA), U=unidadeComb(UA);
-  let ltonData=sorted.map(t=>{let c=compute(t);return (c.comb===UA&&c.lton)?+c.lton.toFixed(2):null;});
-  let metaLine=sorted.map(()=>cfg.meta);
+  let cs=sorted.map(compute);
+  let hasOleo=cs.some(c=>c.comb==='oleo'), hasGas=cs.some(c=>c.comb==='gas');
+  let lblC=document.getElementById('lblConsumoSec');
 
   if(chartLton)chartLton.destroy();
-  chartLton=new Chart(document.getElementById('chartLton'),{
-    type:'line',
-    data:{labels,datasets:[
-      {label:UC,data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
-      {label:'Meta',data:metaLine,borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
-      scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
-  });
+  if(hasOleo&&hasGas){
+    // transição: óleo (L/ton, eixo esq.) + gás (kg/ton, eixo dir.) — cada linha só sobre seus turnos
+    let oleoData=cs.map(c=>(c.comb==='oleo'&&c.lton)?+c.lton.toFixed(2):null);
+    let gasData =cs.map(c=>(c.comb==='gas'&&c.lton)?+c.lton.toFixed(2):null);
+    if(lblC)lblC.textContent='Consumo por turno — óleo (L/ton) · gás (kg/ton)';
+    chartLton=new Chart(document.getElementById('chartLton'),{
+      type:'line',
+      data:{labels,datasets:[
+        {label:'óleo L/ton',data:oleoData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.12)',tension:.25,fill:true,spanGaps:false,yAxisID:'yL'},
+        {label:'gás kg/ton',data:gasData,borderColor:'#3E7CB1',backgroundColor:'rgba(62,124,177,.12)',tension:.25,fill:true,spanGaps:false,yAxisID:'yR'},
+        {label:'meta óleo',data:sorted.map(()=>metaDe('oleo')),borderColor:'#C1571F',borderDash:[4,4],pointRadius:0,yAxisID:'yL'},
+        {label:'meta gás',data:sorted.map(()=>metaDe('gas')),borderColor:'#3E7CB1',borderDash:[4,4],pointRadius:0,yAxisID:'yR'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
+        scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},
+          yL:{position:'left',title:{display:true,text:'L/ton (óleo)',color:'#C1571F'},ticks:{color:'#C1571F'}},
+          yR:{position:'right',title:{display:true,text:'kg/ton (gás)',color:'#3E7CB1'},ticks:{color:'#3E7CB1'},grid:{drawOnChartArea:false}}}}
+    });
+  } else {
+    let ltonData=cs.map(c=>(c.comb===UA&&c.lton)?+c.lton.toFixed(2):null);
+    let metaLine=sorted.map(()=>metaDe(UA));
+    if(lblC)lblC.textContent='Consumo '+UC+' por turno';
+    chartLton=new Chart(document.getElementById('chartLton'),{
+      type:'line',
+      data:{labels,datasets:[
+        {label:UC,data:ltonData,borderColor:'#C1571F',backgroundColor:'rgba(193,87,31,.15)',tension:.25,fill:true},
+        {label:'Meta',data:metaLine,borderColor:'#4F9D69',borderDash:[5,5],pointRadius:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8D96A1',font:{size:10}}}},
+        scales:{x:{ticks:{color:'#8D96A1',font:{size:9}}},y:{ticks:{color:'#8D96A1'}}}}
+    });
+  }
 
   let byDay={};
   sorted.forEach(t=>{ byDay[t.data]=(byDay[t.data]||0)+Number(t.m3_umida||0); });

@@ -368,6 +368,20 @@ function mediaMedida(comb){
   turnos.forEach(t=>{ if(t&&t.data&&t.data>=MEDICAO_DESDE&&m[t.id]){ consumo+=m[t.id].consumo; ton+=(m[t.id].ton||0); } });
   return ton>0?consumo/ton:0;
 }
+// Consumo UNIFICADO do gás no período ESTIMADO [GAS_DESDE, MEDICAO_DESDE) = 18/10→09/11: balanço de massa
+// do período INTEIRO (não por mês). A medição por turno só começou em 10/11.
+function mediaGasEstPeriodo(){
+  let ini=GAS_DESDE, fim=MEDICAO_DESDE;
+  let recs=recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data>=ini&&r.data<fim);
+  let tts=turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
+  let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
+  if(ton<=0) return 0;
+  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
+  let tss=recs.map(recebTs).concat(tts.map(turnoTs));
+  if(tss.length){ let a=Math.min.apply(null,tss), b=Math.max.apply(null,tss);
+    let q=qtd-(estoqueKgEmTs(b)-estoqueKgEmTs(a-1)); if(q>=0) return q/ton; }
+  return qtd>0?qtd/ton:0;
+}
 function mediaRecente(comb){
   comb=comb||combustivelAtual();
   if(comb==='gas'){ let m=mediaMedida(comb); if(m>0) return m; }
@@ -396,7 +410,7 @@ function compute(t){
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){
     let m;
-    if(comb==='gas'){ let mes=(t.data||'').slice(0,7); m=((t.data||'')>=MEDICAO_DESDE)?(mediaMedida(comb)||mediaMes(comb,mes)):mediaMes(comb,mes); }
+    if(comb==='gas'){ let d=(t.data||''), mes=d.slice(0,7); m=(d>=MEDICAO_DESDE)?(mediaMedida(comb)||mediaMes(comb,mes)):(d>=GAS_DESDE?(mediaGasEstPeriodo()||mediaMes(comb,mes)):mediaMes(comb,mes)); }
     else { m=mediaDoDia(comb,t.data)||mediaLton(comb); }
     if(m>0){ lton=m; oleo=ton*m; estimado=true; }
   }

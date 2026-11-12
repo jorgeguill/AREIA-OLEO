@@ -374,11 +374,9 @@ function mediaGasEstPeriodo(){
   let tts=turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;
-  let ord=recs.slice().sort((a,b)=>recebTs(a)-recebTs(b));
-  let qtd=ord.reduce((s,r)=>s+recebQtd(r),0);
-  // "saldo no tanque" = o ÚLTIMO abastecimento do período (o gás mais novo, ainda não queimado = o do dia 9).
-  // Desconta para NÃO contar o estoque como consumido (Jorge: recebido no período − o do dia 9) ÷ ton do período.
-  let saldo=ord.length?recebQtd(ord[ord.length-1]):0;
+  let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
+  // Desconta o SALDO atual do tanque (gás recebido que ainda está no tonel, não queimado) — escolha do Jorge.
+  let est=estoqueAtual(); let saldo=est?est.kg:0;
   let q=qtd-saldo; if(q<0)q=0;
   return q>0?q/ton:0;
 }
@@ -405,14 +403,18 @@ function compute(t){
   }
   if(!comb){ comb=combDaData(t.data); }
   let lton=Number(t.consumo_manual)||null, estimado=false;
-  let tkm=(comb==='gas'&&(t.data||'')>=MEDICAO_DESDE)?medidoById[t.id]:null;
+  // GÁS: não exibe o medido POR TURNO (manômetro oscila); usa a MÉDIA do período medido.
+  let tkm=null;
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){
-    let m;
-    if(comb==='gas'){ let d=(t.data||''), mes=d.slice(0,7); m=(d>=MEDICAO_DESDE)?(mediaMedida(comb)||mediaMes(comb,mes)):(d>=GAS_DESDE?(mediaGasEstPeriodo()||mediaMes(comb,mes)):mediaMes(comb,mes)); }
+    let m, med=false;
+    if(comb==='gas'){ let d=(t.data||''), mes=d.slice(0,7);
+      if(d>=MEDICAO_DESDE){ let mm=mediaMedida(comb); if(mm>0){ m=mm; med=true; } else m=mediaMes(comb,mes); }
+      else if(d>=GAS_DESDE){ m=mediaGasEstPeriodo()||mediaMes(comb,mes); }
+      else m=mediaMes(comb,mes); }
     else { m=mediaDoDia(comb,t.data)||mediaLton(comb); }
-    if(m>0){ lton=m; oleo=ton*m; estimado=true; }
+    if(m>0){ lton=m; oleo=ton*m; estimado=!med; }
   }
   return{m3u,m3s,ton,comb,oleo,lton,estimado};
 }

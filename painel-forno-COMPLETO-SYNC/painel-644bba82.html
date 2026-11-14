@@ -87,6 +87,11 @@ select.edit{width:110px;background:var(--panel2);border:1px solid var(--line);co
   <div id="estCtx" style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4;"></div>
 </section>
 
+<section id="secMemoria" style="display:none;">
+  <h2>Memória de cálculo — gás (conta aberta)</h2>
+  <div class="card" id="cardMemoria"></div>
+</section>
+
 <section>
   <h2 id="lblCustoSec">Custo do gás</h2>
   <div class="grid2">
@@ -499,6 +504,7 @@ function renderAll(){
   renderStats();
   renderConsumoComb();
   renderEstoque();
+  renderMemoriaGas();
   renderCusto();
   renderOleoSupply();
   renderCharts();
@@ -665,6 +671,66 @@ function renderEstoque(){
   document.getElementById('estTot').textContent=Math.round(est.kg).toLocaleString('pt-BR');
   document.getElementById('estPct').textContent=((est.p1+est.p2)/2).toFixed(0)+'%';
   document.getElementById('estCtx').innerHTML=(baixo?'<b style="color:var(--danger)">⚠️ Estoque baixo</b> (< '+lim+'%) — programar abastecimento. · ':'')+`Tonel 1 ${Math.round(est.p1/100*cap).toLocaleString('pt-BR')} kg · Tonel 2 ${Math.round(est.p2/100*cap).toLocaleString('pt-BR')} kg · ${nToneis()} tonéis × ${cap.toLocaleString('pt-BR')} kg/100% · atualizado ${formatDate(est.quando)} (${est.label}).`;
+}
+// FASE 1.16 — conta aberta do gás: exibe os MESMOS números que mediaGasEstPeriodo()/mediaMedida()/estoqueAtual() produzem (espelho, não recálculo).
+function renderMemoriaGas(){
+  let sec=document.getElementById('secMemoria'), box=document.getElementById('cardMemoria');
+  if(!sec||!box) return;
+  let recsGas=recebimentos.filter(r=>recebComb(r)==='gas');
+  let turnGas=turnos.filter(t=>t&&t.data&&combDoTurno(t)==='gas');
+  if(!recsGas.length&&!turnGas.length){ sec.style.display='none'; return; }
+  sec.style.display='';
+  const kg=n=>(Math.round(Number(n)||0)).toLocaleString('pt-BR');
+  const tn=n=>(Number(n)||0).toLocaleString('pt-BR',{maximumFractionDigits:1});
+  const linha=(lbl,val,sub)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-top:1px solid var(--line);"><div style="font-size:13px;">${lbl}${sub?` <span style="font-size:11px;color:var(--muted);">${sub}</span>`:''}</div><div style="font-size:14px;font-weight:600;text-align:right;white-space:nowrap;">${val}</div></div>`;
+  const titulo=t=>`<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 2px;">${t}</div>`;
+  // 1) RECEBIDO (total) — cada nota de gás; o salto de % do tanque é anulado pelos kg abastecidos
+  let recsOrd=recsGas.slice().sort((a,b)=>recebTs(a)-recebTs(b));
+  let totReceb=recsOrd.reduce((s,r)=>s+recebQtd(r),0);
+  let notas=recsOrd.map(r=>{
+    let temDep=(r.tq1_depois!==undefined&&r.tq1_depois!==''&&r.tq1_depois!==null&&r.tq2_depois!==undefined&&r.tq2_depois!==''&&r.tq2_depois!==null);
+    let dep=temDep?`tanque → ${Math.round(Number(r.tq1_depois))}%/${Math.round(Number(r.tq2_depois))}%`:'sem leitura do tanque';
+    return linha(`${formatDate(r.data)}`, `+${kg(recebQtd(r))} kg`, `${r.fornecedor?r.fornecedor+' · ':''}${dep}`);
+  }).join('');
+  // 2) ESTOQUE ATUAL
+  let est=estoqueAtual();
+  let estHtml=est?linha('Estoque agora no tanque', `${kg(est.kg)} kg`, `T1 ${Math.round(est.p1)}% · T2 ${Math.round(est.p2)}% · ${formatDate(est.quando)}`)
+                 :linha('Estoque agora no tanque', '—', 'sem leitura de tonel ainda');
+  // 3) ESTIMADO (18/10–09/11) = mediaGasEstPeriodo()
+  let ini=GAS_DESDE, fim=MEDICAO_DESDE;
+  let recsP=recsGas.filter(r=>r.data&&r.data>=ini&&r.data<fim);
+  let recebP=recsP.reduce((s,r)=>s+recebQtd(r),0);
+  let turnP=turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
+  let tonP=turnP.reduce((s,t)=>s+tonOf(t).ton,0);
+  let pos=recsGas.filter(r=>r.data&&r.data>=fim&&r.tq1_antes!==undefined&&r.tq1_antes!==''&&r.tq1_antes!==null&&r.tq2_antes!==undefined&&r.tq2_antes!==''&&r.tq2_antes!==null).sort((a,b)=>recebTs(a)-recebTs(b));
+  let saldo9=pos.length?estoqueLeitura(pos[0].tq1_antes,pos[0].tq2_antes):0;
+  let saldoSub=pos.length?`leitura ANTES do abast. de ${formatDate(pos[0].data)}: ${Math.round(Number(pos[0].tq1_antes))}%/${Math.round(Number(pos[0].tq2_antes))}%`:'⚠️ falta a leitura "antes" do 1º abast. ≥10/11 → saldo=0 (infla o queimado)';
+  let queimadoE=Math.max(0,recebP-saldo9);
+  let ltonE=tonP>0?queimadoE/tonP:0;
+  let estBloco=titulo('Período estimado · 18/10 → 09/11')
+    +linha('Recebido no período', `${kg(recebP)} kg`, `${recsP.length} nota(s)`)
+    +linha('− Saldo do dia 9 (sobrou no tanque)', `− ${kg(saldo9)} kg`, saldoSub)
+    +linha('= Gás queimado', `${kg(queimadoE)} kg`)
+    +linha('÷ Areia seca do período', `${tn(tonP)} ton`, `${turnP.length} turno(s)`)
+    +linha('<b>= Consumo estimado</b>', `<b>${ltonE.toFixed(2)} kg/ton</b>`, 'linha "estimado" do gráfico');
+  // 4) REAL (de 10/11) = mediaMedida(): trechos LIMPOS (sem abastecimento no meio)
+  let m=medidoById||{};
+  let itens=turnos.filter(t=>t&&t.data&&t.data>=MEDICAO_DESDE&&m[t.id]).sort((a,b)=>turnoTs(a)-turnoTs(b));
+  let somaC=itens.reduce((s,t)=>s+m[t.id].consumo,0);
+  let somaT=itens.reduce((s,t)=>s+(m[t.id].ton||0),0);
+  let ltonR=somaT>0?somaC/somaT:0;
+  let detalhe=itens.map(t=>linha(`${formatDate(t.data)} ${(t.turno||'').slice(0,3)}`, `${kg(m[t.id].consumo)} kg`, `÷ ${tn(m[t.id].ton)} ton = ${m[t.id].lton.toFixed(2)} kg/ton`)).join('');
+  let realBloco=titulo('Período real · medido de 10/11')
+    +(itens.length
+       ? detalhe
+         +linha('= Soma do medido', `${kg(somaC)} kg ÷ ${tn(somaT)} ton`)
+         +linha('<b>= Consumo real</b>', `<b>${ltonR.toFixed(2)} kg/ton</b>`, 'média dos trechos sem abastecimento')
+       : linha('Consumo real', '—', 'precisa de 2 leituras de turno seguidas, sem abastecimento no meio'));
+  box.innerHTML=
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4;">Toda a era do gás (não depende do filtro de mês). Manômetro ±5%. No abastecimento o nível sobe — esse salto <b>não é consumo</b>: a conta desconta os kg abastecidos.</div>`
+    +titulo(`Recebido (gás) · total ${kg(totReceb)} kg`)+notas
+    +titulo('Estoque')+estHtml
+    +estBloco+realBloco;
 }
 
 function renderCharts(){

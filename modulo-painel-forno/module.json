@@ -1,0 +1,41 @@
+{
+  "id": "painel-forno",
+  "nome": "Painel do Forno",
+  "descricao": "Controle de secagem de areia (m³ úmida → seca) e consumo de óleo queimado, com meta L/ton em tempo real.",
+  "versao": "1.0.0-teste",
+  "fase": "teste",
+  "categoria": "producao",
+  "icone": "🔥",
+  "cor": "#C1571F",
+
+  "//": "Contrato de integração para o SIGA carregar esta ferramenta.",
+  "entrada": {
+    "css": "painel-forno.css",
+    "script": "painel-forno.js",
+    "montar": "PainelForno.mount",
+    "container": "elemento DOM ou seletor CSS fornecido pelo SIGA"
+  },
+
+  "opcoes": {
+    "storagePrefix": "painel-forno:",
+    "firebasePath": ""
+  },
+
+  "rota_sugerida": "/ferramentas/painel-forno",
+  "standalone": "index.html",
+  "instancias": "single",
+
+  "armazenamento": {
+    "tipo": "localStorage",
+    "prefixo": "painel-forno:",
+    "chaves": ["painel-forno:cfg", "painel-forno:turnos", "painel-forno:recebimentos"]
+  },
+
+  "dependencias": {
+    "obrigatorias": [],
+    "opcionais": [
+      "firebase-app 10.7.1 (sincronização em tempo real)",
+      "firebase-database 10.7.1 (sincronização em tempo real)"
+    ]
+  }
+}

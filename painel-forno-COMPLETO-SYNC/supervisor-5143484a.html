@@ -375,9 +375,10 @@ function mediaGasEstPeriodo(){
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;
   let qtd=recs.reduce((s,r)=>s+recebQtd(r),0);
-  // Desconta o SALDO atual do tanque (gás recebido que ainda está no tonel, não queimado) — escolha do Jorge.
-  let est=estoqueAtual(); let saldo=est?est.kg:0;
-  let q=qtd-saldo; if(q<0)q=0;
+  // SALDO no FIM do período (dia 9) = leitura ANTES do 1º abastecimento de gás em/após 10/11 (o que sobrou, ~1.000 kg).
+  let pos=recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data>=fim&&r.tq1_antes!==undefined&&r.tq1_antes!==''&&r.tq1_antes!==null&&r.tq2_antes!==undefined&&r.tq2_antes!==''&&r.tq2_antes!==null).sort((a,b)=>recebTs(a)-recebTs(b));
+  let saldoFim=pos.length?estoqueLeitura(pos[0].tq1_antes,pos[0].tq2_antes):0;
+  let q=qtd-saldoFim; if(q<0)q=0;
   return q>0?q/ton:0;
 }
 function mediaRecente(comb){
@@ -408,9 +409,12 @@ function compute(t){
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){
-    // GÁS: UM número robusto = (total recebido − saldo atual do tanque) ÷ total de areia seca de gás (mediaLton).
+    // GÁS: de 10/11 (medição) = consumo REAL (mediaMedida); 18/10–09/11 = ESTIMATIVA do período.
     let m, med=false;
-    if(comb==='gas'){ m=mediaLton(comb); med=true; }
+    if(comb==='gas'){ let d=(t.data||'');
+      if(d>=MEDICAO_DESDE){ let mm=mediaMedida(comb); m=(mm>0?mm:mediaLton(comb)); med=true; }
+      else { m=mediaGasEstPeriodo(); }
+    }
     else { m=mediaDoDia(comb,t.data)||mediaLton(comb); }
     if(m>0){ lton=m; oleo=ton*m; estimado=!med; }
   }

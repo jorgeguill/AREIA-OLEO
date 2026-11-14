@@ -410,11 +410,9 @@ function compute(t){
   if(!lton&&tkm&&ton>0.01){ lton=tkm.lton; oleo=tkm.consumo; medido=true; estimado=false; }
   else if(!lton&&medido&&oleo>0&&ton>0.01){ lton=oleo/ton; }
   else if(!lton&&ton>0.01){
+    // GÁS: UM número robusto = (total recebido − saldo atual do tanque) ÷ total de areia seca de gás (mediaLton).
     let m, med=false;
-    if(comb==='gas'){ let d=(t.data||''), mes=d.slice(0,7);
-      if(d>=MEDICAO_DESDE){ let mm=mediaMedida(comb); if(mm>0){ m=mm; med=true; } else m=mediaMes(comb,mes); }
-      else if(d>=GAS_DESDE){ m=mediaGasEstPeriodo()||mediaMes(comb,mes); }
-      else m=mediaMes(comb,mes); }
+    if(comb==='gas'){ m=mediaLton(comb); med=true; }
     else { m=mediaDoDia(comb,t.data)||mediaLton(comb); }
     if(m>0){ lton=m; oleo=ton*m; estimado=!med; }
   }

@@ -723,11 +723,22 @@ function renderMemoriaGas(){
          +linha('= Soma do medido', `${kg(somaC)} kg ÷ ${tn(somaT)} ton`)
          +linha('<b>= Consumo real</b>', `<b>${ltonR.toFixed(2)} kg/ton</b>`, 'média dos trechos sem abastecimento')
        : linha('Consumo real', '—', 'precisa de 2 leituras de turno seguidas, sem abastecimento no meio'));
+  // 5) BALANÇO GERAL = mediaLton('gas'): recebido total − saldo que sobrou no tanque (após o último abast.) ÷ ton total
+  let totGasTon=turnGas.reduce((s,t)=>s+tonOf(t).ton,0);
+  let estKg=est?est.kg:0;
+  let queimadoTot=Math.max(0,totReceb-estKg);
+  let ltonGeral=mediaLton('gas');
+  let geralBloco=titulo('Balanço geral · toda a era do gás')
+    +linha('Recebido (gás, total)', `${kg(totReceb)} kg`)
+    +linha('− Saldo atual no tanque', `− ${kg(estKg)} kg`, est?`o que sobrou após o último abastecimento (${formatDate(est.quando)})`:'sem leitura de tonel ainda')
+    +linha('= Gás queimado (acumulado)', `${kg(queimadoTot)} kg`)
+    +linha('÷ Areia seca total (gás)', `${tn(totGasTon)} ton`, `${turnGas.length} turno(s)`)
+    +linha('<b>= Consumo acumulado</b>', `<b>${ltonGeral.toFixed(2)} kg/ton</b>`, 'balanço de massa: recebido − saldo no tanque');
   box.innerHTML=
-    `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4;">Toda a era do gás (não depende do filtro de mês). Manômetro ±5%. No abastecimento o nível sobe — esse salto <b>não é consumo</b>: a conta desconta os kg abastecidos.</div>`
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4;">Toda a era do gás (não depende do filtro de mês). Manômetro ±5%. No abastecimento o nível sobe — esse salto <b>não é consumo</b>: a conta desconta os kg abastecidos. O saldo que sobra no tanque também não é consumo (ainda vai ser queimado).</div>`
     +titulo(`Recebido (gás) · total ${kg(totReceb)} kg`)+notas
     +titulo('Estoque')+estHtml
-    +estBloco+realBloco;
+    +estBloco+realBloco+geralBloco;
 }
 
 function renderStatus(){

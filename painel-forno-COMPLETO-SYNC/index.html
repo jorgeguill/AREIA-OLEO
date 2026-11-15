@@ -400,7 +400,7 @@ function mediaMedida(comb){
 // único número do período (recebido − Δestoque ÷ ton de gás do período).
 function mediaGasEstPeriodo(){
   let ini=GAS_DESDE, fim=MEDICAO_DESDE;
-  let recs=state.recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data>=ini&&r.data<fim);
+  let recs=state.recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data<fim); // inclui o gás ESTOCADO antes de 18/10 (1º abast. 25/09) — queimado no período (forno a óleo até 17/10)
   let tts=state.turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;

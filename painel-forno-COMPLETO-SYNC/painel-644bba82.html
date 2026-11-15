@@ -377,7 +377,7 @@ function mediaMedida(comb){
 // do período INTEIRO (não por mês). A medição por turno só começou em 10/11.
 function mediaGasEstPeriodo(){
   let ini=GAS_DESDE, fim=MEDICAO_DESDE;
-  let recs=recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data>=ini&&r.data<fim);
+  let recs=recebimentos.filter(r=>recebComb(r)==='gas'&&r.data&&r.data<fim); // inclui o gás ESTOCADO antes de 18/10 (1º abast. 25/09) — queimado no período (forno a óleo até 17/10)
   let tts=turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
   let ton=tts.reduce((s,t)=>s+tonOf(t).ton,0);
   if(ton<=0) return 0;
@@ -698,7 +698,7 @@ function renderMemoriaGas(){
                  :linha('Estoque agora no tanque', '—', 'sem leitura de tonel ainda');
   // 3) ESTIMADO (18/10–09/11) = mediaGasEstPeriodo()
   let ini=GAS_DESDE, fim=MEDICAO_DESDE;
-  let recsP=recsGas.filter(r=>r.data&&r.data>=ini&&r.data<fim);
+  let recsP=recsGas.filter(r=>r.data&&r.data<fim); // inclui o estocado antes de 18/10 (25/09), queimado no período
   let recebP=recsP.reduce((s,r)=>s+recebQtd(r),0);
   let turnP=turnos.filter(t=>t&&t.data&&t.data>=ini&&t.data<fim&&combDoTurno(t)==='gas');
   let tonP=turnP.reduce((s,t)=>s+tonOf(t).ton,0);
@@ -708,7 +708,7 @@ function renderMemoriaGas(){
   let queimadoE=Math.max(0,recebP-saldo9);
   let ltonE=tonP>0?queimadoE/tonP:0;
   let estBloco=titulo('Período estimado · 18/10 → 09/11')
-    +linha('Recebido no período', `${kg(recebP)} kg`, `${recsP.length} nota(s)`)
+    +linha('Recebido até o dia 9 (inclui estoque de 25/09)', `${kg(recebP)} kg`, `${recsP.length} nota(s)`)
     +linha('− Saldo do dia 9 (sobrou no tanque)', `− ${kg(saldo9)} kg`, saldoSub)
     +linha('= Gás queimado', `${kg(queimadoE)} kg`)
     +linha('÷ Areia seca do período', `${tn(tonP)} ton`, `${turnP.length} turno(s)`)

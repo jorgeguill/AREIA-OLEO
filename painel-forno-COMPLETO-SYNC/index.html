@@ -308,7 +308,7 @@ function mediaLton(comb){
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
-function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
+function combDoTurno(t){ if(t&&t.data&&t.data>=GAS_DESDE) return 'gas'; return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
 // Gás: a leitura que FECHA um turno é a de ABERTURA do próximo → o consumo do ÚLTIMO turno registrado só
 // fecha quando o próximo é lançado. Para exibir "o último consumo", usa o PENÚLTIMO turno (o último já fechado).
 function ultimoTurnoExib(sorted){ let n=sorted.length; if(!n) return null; let u=sorted[n-1]; return (n>=2&&combDoTurno(u)==='gas')?sorted[n-2]:u; }
@@ -422,6 +422,7 @@ function mediaRecente(comb){
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-state.cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
+  if(t.data&&t.data>=GAS_DESDE) comb='gas'; // tudo de 18/10+ é gás (não há óleo após a virada); a produção conta no gás mesmo se o turno foi lançado como óleo
   let oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
   function lerOleo(){ let q=0,om=false;
     if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }

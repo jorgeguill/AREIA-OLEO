@@ -280,7 +280,7 @@ function mediaLton(comb){
   return ton>0?qtd/ton:0;
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
-function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
+function combDoTurno(t){ if(t&&t.data&&t.data>=GAS_DESDE) return 'gas'; return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
 // consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
 function mediaDoDia(comb,data){
   if(!data||comb==='gas') return 0; // gás usa o balanço de massa (mediaLton/mediaPeriodo); por dia o abastecimento inflaria
@@ -397,6 +397,7 @@ function mediaRecente(comb){
 function compute(t){
   let b=tonOf(t), m3u=b.m3u, m3s=m3u*(1-cfg.umidade/100), ton=b.ton;
   let comb=(t.combustivel==='gas'||t.combustivel==='oleo')?t.combustivel:null; // combustível explícito do turno
+  if(t.data&&t.data>=GAS_DESDE) comb='gas'; // tudo de 18/10+ é gás (não há óleo após a virada); a produção conta no gás mesmo se o turno foi lançado como óleo
   let oleo=0, medido=false; // "oleo" = quantidade de combustível na unidade dele (L ou kg)
   function lerOleo(){ let q=0,om=false;
     if(t.tanque_ini!==undefined&&t.tanque_ini!==''&&t.tanque_ini!==null&&t.tanque_fim!==undefined&&t.tanque_fim!==''&&t.tanque_fim!==null){ q+=(Number(t.tanque_ini)-Number(t.tanque_fim)); om=true; }

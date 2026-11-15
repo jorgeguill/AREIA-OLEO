@@ -279,6 +279,9 @@ function mediaLton(comb){
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
 function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
+// Gás: a leitura que FECHA um turno é a de ABERTURA do próximo → o consumo do ÚLTIMO turno registrado só
+// fecha quando o próximo é lançado. Para exibir "o último consumo", usa o PENÚLTIMO turno (o último já fechado).
+function ultimoTurnoExib(sorted){ let n=sorted.length; if(!n) return null; let u=sorted[n-1]; return (n>=2&&combDoTurno(u)==='gas')?sorted[n-2]:u; }
 // consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
 function mediaDoDia(comb,data){
   if(!data||comb==='gas') return 0; // gás usa o balanço de massa (mediaLton/mediaPeriodo); por dia o abastecimento inflaria
@@ -627,7 +630,7 @@ function renderStats(){
   document.getElementById('statDentroMeta').textContent=ltons.length?`${Math.round(dentro/ltons.length*100)}%`:'—';
 
   let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
-  let last=sorted[sorted.length-1];
+  let last=ultimoTurnoExib(sorted); // penúltimo p/ gás: o último ainda não fechou
   let lastC=last?compute(last):null;
   document.getElementById('statUltimoLton').textContent=lastC&&lastC.lton?lastC.lton.toFixed(2):'—';
 }
@@ -743,13 +746,14 @@ function renderMemoriaGas(){
 
 function renderStatus(){
   let sorted=turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
-  let last=sorted[sorted.length-1];
+  let last=ultimoTurnoExib(sorted); // penúltimo p/ gás: o último ainda não fechou (leitura final = abertura do próximo)
+  let aberto=(sorted.length&&last!==sorted[sorted.length-1])?sorted[sorted.length-1]:null;
   let info=document.getElementById('statusInfo');
   let pillWrap=document.getElementById('statusPill');
   if(!last){ info.textContent='Sem turnos registrados ainda.'; pillWrap.innerHTML=''; return; }
   let c=compute(last);
   let meta=cfg.meta, tol=cfg.tolerancia, limite=meta*(1+tol/100);
-  info.textContent=`${formatDate(last.data)} · ${last.turno||''} · ${last.operador||'—'} · Silo ${last.silo||'—'}`;
+  info.textContent=`${formatDate(last.data)} · ${last.turno||''} · ${last.operador||'—'} · Silo ${last.silo||'—'}`+(aberto?` · ${aberto.turno||''} em aberto (fecha no próximo)`:'');
   let uc=unidadeCons(c.comb);
   if(!c.lton){
     pillWrap.innerHTML=`<span class="status-pill warn"><span class="dot"></span>Sem dado de ${uc}</span>`;

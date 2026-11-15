@@ -309,6 +309,9 @@ function mediaLton(comb){
 }
 // combustível de um turno sem chamar compute (evita recursão): campo explícito, senão linha do tempo.
 function combDoTurno(t){ return (t&&(t.combustivel==='gas'||t.combustivel==='oleo'))?t.combustivel:combDaData(t&&t.data); }
+// Gás: a leitura que FECHA um turno é a de ABERTURA do próximo → o consumo do ÚLTIMO turno registrado só
+// fecha quando o próximo é lançado. Para exibir "o último consumo", usa o PENÚLTIMO turno (o último já fechado).
+function ultimoTurnoExib(sorted){ let n=sorted.length; if(!n) return null; let u=sorted[n-1]; return (n>=2&&combDoTurno(u)==='gas')?sorted[n-2]:u; }
 // consumo real do DIA = nota(s) do dia ÷ ton seca do dia (abastecimento praticamente diário no período do óleo).
 function mediaDoDia(comb,data){
   if(!data||comb==='gas') return 0; // gás usa o balanço de massa global (mediaLton); por dia o abastecimento inflaria
@@ -459,7 +462,8 @@ function updateAlert(c){ if(document.querySelector('.status-dot').classList.cont
 function render(){
   medidoById=calcMedido();
   let turnos=state.turnos.slice().sort((a,b)=>turnoTs(a)-turnoTs(b));
-  let last=turnos[turnos.length-1],totU=0,totT=0;
+  let last=ultimoTurnoExib(turnos),totU=0,totT=0;
+  let aberto=(turnos.length&&last!==turnos[turnos.length-1])?turnos[turnos.length-1]:null;
   turnos.forEach(t=>{let c=compute(t);totU+=c.m3u;totT+=c.ton;});
   let c=last?compute(last):{lton:null};
   let UA=combustivelAtual(), UC=unidadeCons(UA), U=unidadeComb(UA);
@@ -475,7 +479,7 @@ function render(){
   let angle=gv!=null?-135+Math.min(270,(gv/scaleMax)*270):-135;
   document.getElementById('needle').style.transform=`translate(-50%,-100%) rotate(${angle}deg)`;
   let ctx=document.getElementById('gaugeCtx');
-  if(ctx){ if(gv==null){ ctx.textContent=`Meta ${meta} ${UC} — sem dados ainda`; } else { ctx.textContent=`Meta ${meta} · limite ${limite.toFixed(1)} ${UC}`+(last?` — último: ${last.turno||''} (${last.operador||'—'})`:'')+(gEst?' · estimado':''); } }
+  if(ctx){ if(gv==null){ ctx.textContent=`Meta ${meta} ${UC} — sem dados ainda`; } else { ctx.textContent=`Meta ${meta} · limite ${limite.toFixed(1)} ${UC}`+(last?` — último fechado: ${formatDate(last.data)} ${last.turno||''} (${last.operador||'—'})`:'')+(gEst?' · estimado':'')+(aberto?` · ${aberto.turno||''} em aberto (fecha no próximo lançamento)`:''); } }
   document.getElementById('totalUmida').textContent=totU.toFixed(1);
   document.getElementById('totalSeca').textContent=totT.toFixed(1);
   updateAlert(c);

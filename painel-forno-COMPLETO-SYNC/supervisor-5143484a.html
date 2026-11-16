@@ -758,6 +758,19 @@ function renderMemoriaGas(){
   } else if(ratio>0 && ratio<=1.02){
     sens=titulo('Sensibilidade')+linha('Consumo vs meta', `${ltonGeral.toFixed(2)} / ${meta} kg/ton`, 'dentro da meta ✓');
   }
+  // Calibração da capacidade do tonel pela bomba: cap = kg ÷ (Δ% total / 100). O abast. de MAIOR Δ% (ex.: 1º do zero) é o mais confiável.
+  let dok=v=>v!==undefined&&v!==''&&v!==null;
+  let capList=recsGas.filter(r=>dok(r.tq1_antes)&&dok(r.tq2_antes)&&dok(r.tq1_depois)&&dok(r.tq2_depois)&&Number(r.kg)>0)
+    .map(r=>{ let dp=(Number(r.tq1_depois)-Number(r.tq1_antes))+(Number(r.tq2_depois)-Number(r.tq2_antes)); return {data:r.data,kg:Number(r.kg),dp,cap:dp>0?Number(r.kg)/(dp/100):0}; })
+    .filter(x=>x.cap>0).sort((a,b)=>b.dp-a.dp);
+  let capCfg=tonelCapKg(), calibBloco='';
+  if(capList.length){
+    let rep=capList[0], diffPct=capCfg>0?(rep.cap-capCfg)/capCfg*100:0;
+    calibBloco=titulo('Calibração do tanque (pela bomba)')
+      +linha('Capacidade calibrada / tonel', `${kg(rep.cap)} kg`, `abast. ${formatDate(rep.data)} · Δ ${Math.round(rep.dp)}% · ${kg(rep.kg)} kg (faixa maior = mais confiável)`)
+      +linha('Configurada (tonel_cap_kg)', `${kg(capCfg)} kg`, Math.abs(diffPct)>5?`⚠️ ${diffPct>0?'+':''}${diffPct.toFixed(0)}% vs calibrada — ajuste em Configurações`:'bate com a calibração ✓')
+      +capList.slice(0,6).map(x=>linha(`${formatDate(x.data)}`, `${kg(x.cap)} kg/tonel`, `Δ ${Math.round(x.dp)}% · ${kg(x.kg)} kg`)).join('');
+  }
   let auditBloco=titulo('Auditoria — de onde vem o kg/ton')
     +linha('Parâmetros em uso', `umid ${u}% · dens ${dens} · concha ${cm3} m³ · meta ${meta}`, 'confira contra a realidade')
     +linha('Produção (gás, era 18/10→hoje)', `${tn(totGasTon)} ton`, `${turnGas.length} turno(s) · ${kg(totConchas)} conchas · ${tn(totM3)} m³`)
@@ -767,7 +780,7 @@ function renderMemoriaGas(){
     `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4;">Toda a era do gás (não depende do filtro de mês). Manômetro ±5%. No abastecimento o nível sobe — esse salto <b>não é consumo</b>: a conta desconta os kg abastecidos. O saldo que sobra no tanque também não é consumo (ainda vai ser queimado).</div>`
     +titulo(`Recebido (gás) · total ${kg(totReceb)} kg`)+notas
     +titulo('Estoque')+estHtml
-    +estBloco+realBloco+geralBloco+auditBloco;
+    +estBloco+realBloco+geralBloco+auditBloco+calibBloco;
 }
 
 function renderStatus(){

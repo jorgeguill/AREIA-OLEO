@@ -738,11 +738,36 @@ function renderMemoriaGas(){
     +linha('= Gás queimado (acumulado)', `${kg(queimadoTot)} kg`)
     +linha('÷ Areia seca total (gás)', `${tn(totGasTon)} ton`, `${turnGas.length} turno(s)`)
     +linha('<b>= Consumo acumulado</b>', `<b>${ltonGeral.toFixed(2)} kg/ton</b>`, 'balanço de massa: recebido − saldo no tanque');
+  // 6) AUDITORIA — parâmetros + produção + turnos sem produção + sensibilidade (por que o kg/ton está alto)
+  let u=Number(cfg.umidade)||0, dens=Number(cfg.densidade)||0, cm3=conchaM3(), meta=Number(cfg.meta)||0;
+  let totConchas=turnGas.reduce((s,t)=>s+turnoConchas(t),0);
+  let totM3=turnGas.reduce((s,t)=>s+tonOf(t).m3u,0);
+  let semProd=turnGas.filter(t=>!(tonOf(t).ton>0));
+  let ratio=(meta>0&&ltonGeral>0)?ltonGeral/meta:0;
+  let sens='';
+  if(ratio>1.02){
+    let faltaPct=(ratio-1)*100;
+    let densNeeded=dens*ratio;
+    let cmNeeded=totConchas>0?queimadoTot/(meta*totConchas*(1-u/100)*dens):0;
+    let tonFalta=totGasTon*(ratio-1);
+    sens=titulo('Sensibilidade — o que levaria à meta')
+      +linha(`Acima da meta em`, `~${faltaPct.toFixed(0)}%`, `hoje ${ltonGeral.toFixed(2)} vs meta ${meta} kg/ton`)
+      +linha('Bateria a meta se a densidade fosse', `${densNeeded.toFixed(2)} t/m³`, `hoje ${dens} — confira a densidade real`)
+      +(totConchas>0?linha('…ou se a caçamba fosse', `${cmNeeded.toFixed(2)} m³/concha`, `hoje ${cm3} — m³ foi gravado por esse valor`):'')
+      +linha('…ou se faltasse produção', `~${tn(tonFalta)} ton`, 'turnos/conchas não lançados no banco');
+  } else if(ratio>0 && ratio<=1.02){
+    sens=titulo('Sensibilidade')+linha('Consumo vs meta', `${ltonGeral.toFixed(2)} / ${meta} kg/ton`, 'dentro da meta ✓');
+  }
+  let auditBloco=titulo('Auditoria — de onde vem o kg/ton')
+    +linha('Parâmetros em uso', `umid ${u}% · dens ${dens} · concha ${cm3} m³ · meta ${meta}`, 'confira contra a realidade')
+    +linha('Produção (gás, era 18/10→hoje)', `${tn(totGasTon)} ton`, `${turnGas.length} turno(s) · ${kg(totConchas)} conchas · ${tn(totM3)} m³`)
+    +(semProd.length?linha('⚠️ Turnos de gás SEM produção', `${semProd.length}`, semProd.slice(0,10).map(t=>formatDate(t.data)+' '+(t.turno||'').slice(0,3)).join(', ')+(semProd.length>10?'…':'')+' — não somam ton'):linha('Turnos sem produção lançada', '0', 'todos têm conchas/m³ ✓'))
+    +sens;
   box.innerHTML=
     `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4;">Toda a era do gás (não depende do filtro de mês). Manômetro ±5%. No abastecimento o nível sobe — esse salto <b>não é consumo</b>: a conta desconta os kg abastecidos. O saldo que sobra no tanque também não é consumo (ainda vai ser queimado).</div>`
     +titulo(`Recebido (gás) · total ${kg(totReceb)} kg`)+notas
     +titulo('Estoque')+estHtml
-    +estBloco+realBloco+geralBloco;
+    +estBloco+realBloco+geralBloco+auditBloco;
 }
 
 function renderCharts(){

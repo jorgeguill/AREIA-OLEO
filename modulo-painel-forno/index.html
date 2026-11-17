@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12151A">
+<title>Painel Forno — Módulo (teste)</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+
+<!-- Fontes (opcionais: caem para fontes do sistema se offline) -->
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase (opcional: só para sincronização em tempo real) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+
+<!-- Estilos isolados do módulo -->
+<link rel="stylesheet" href="./painel-forno.css">
+<style>
+  /* Estilo do HOST em modo standalone. No SIGA, quem define o body é o SIGA. */
+  html, body { margin: 0; padding: 0; background: #12151A; }
+</style>
+</head>
+<body>
+
+<!-- Ponto de montagem do módulo -->
+<div id="pf-root"></div>
+
+<!-- Módulo -->
+<script src="./painel-forno.js"></script>
+<script>
+  // Modo standalone (fase de teste): monta o módulo ocupando a página inteira.
+  // Dentro do SIGA, o próprio SIGA chamará PainelForno.mount(seuContainer, opcoes).
+  PainelForno.mount('#pf-root');
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(function () { /* offline ok */ });
+  }
+</script>
+</body>
+</html>

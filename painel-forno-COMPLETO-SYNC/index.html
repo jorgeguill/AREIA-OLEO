@@ -469,7 +469,7 @@ function render(){
   let c=last?compute(last):{lton:null};
   let UA=combustivelAtual(), UC=unidadeCons(UA), U=unidadeComb(UA);
   { let gt=document.getElementById('gaugeTitle'); if(gt)gt.textContent='Consumo — '+UC; let gu=document.getElementById('gaugeUnit'); if(gu)gu.textContent=UC.toUpperCase(); }
-  let meta=state.cfg.meta||5,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
+  let meta=state.cfg.meta||6,tol=state.cfg.tolerancia||15, limite=meta*(1+tol/100);
   // valor do medidor: último turno; se vier vazio, cai para a média geral (nunca fica em branco havendo dados)
   let gv=c.lton, gEst=c.estimado;
   if(gv==null){ let m=mediaRecente(UA); if(m>0){ gv=m; gEst=true; } }

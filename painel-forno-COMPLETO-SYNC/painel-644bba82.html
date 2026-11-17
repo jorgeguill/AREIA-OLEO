@@ -710,7 +710,7 @@ function renderMemoriaGas(){
   let ltonE=tonP>0?queimadoE/tonP:0;
   let estBloco=titulo('Período estimado · 18/10 → 09/11')
     +linha('Recebido até o dia 9 (inclui estoque de 25/09)', `${kg(recebP)} kg`, `${recsP.length} nota(s)`)
-    +linha('− Saldo do dia 9 (sobrou no tanque)', `− ${kg(saldo9)} kg`, saldoSub)
+    +linha('(−) Saldo do dia 9 no tanque (sobrou, não queimado)', `${kg(saldo9)} kg`, saldoSub)
     +linha('= Gás queimado', `${kg(queimadoE)} kg`)
     +linha('÷ Areia seca do período', `${tn(tonP)} ton`, `${turnP.length} turno(s)`)
     +linha('<b>= Consumo estimado</b>', `<b>${ltonE.toFixed(2)} kg/ton</b>`, 'linha "estimado" do gráfico');
@@ -734,7 +734,7 @@ function renderMemoriaGas(){
   let ltonGeral=mediaLton('gas');
   let geralBloco=titulo('Balanço geral · toda a era do gás')
     +linha('Recebido (gás, total)', `${kg(totReceb)} kg`)
-    +linha('− Saldo atual no tanque', `− ${kg(estKg)} kg`, est?`o que sobrou após o último abastecimento (${formatDate(est.quando)})`:'sem leitura de tonel ainda')
+    +linha('(−) Saldo atual no tanque (sobrou, não queimado)', `${kg(estKg)} kg`, est?`o que sobrou após o último abastecimento (${formatDate(est.quando)})`:'sem leitura de tonel ainda')
     +linha('= Gás queimado (acumulado)', `${kg(queimadoTot)} kg`)
     +linha('÷ Areia seca total (gás)', `${tn(totGasTon)} ton`, `${turnGas.length} turno(s)`)
     +linha('<b>= Consumo acumulado</b>', `<b>${ltonGeral.toFixed(2)} kg/ton</b>`, 'balanço de massa: recebido − saldo no tanque');
